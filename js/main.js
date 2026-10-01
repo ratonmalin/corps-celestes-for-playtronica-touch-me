@@ -151,7 +151,8 @@ function decay() {
 }
 
 async function boot() {
-    const savedVolume = Number(localStorage.getItem(VOLUME_STORAGE_KEY));
+    const storedVolume = localStorage.getItem(VOLUME_STORAGE_KEY);
+    const savedVolume = storedVolume === null ? NaN : Number(storedVolume);
 
     if (Number.isFinite(savedVolume)) {
         ui.volume.value = String(clamp(savedVolume));
