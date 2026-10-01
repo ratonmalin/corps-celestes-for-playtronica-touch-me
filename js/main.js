@@ -60,6 +60,7 @@ ui.fullscreen.addEventListener("click", async () => {
         if (document.fullscreenElement) {
             await document.exitFullscreen();
         } else {
+            await audio.start();
             await document.documentElement.requestFullscreen();
         }
     } catch (error) {
@@ -85,7 +86,13 @@ ui.sensitivity.addEventListener("input", () => {
     midi?.setSensitivity(value);
 });
 
-ui.scale.addEventListener("change", () => {
+ui.scale.addEventListener("change", async () => {
+    try {
+        await audio.start();
+    } catch (error) {
+        console.info("[AUDIO] En attente d'un geste utilisateur.", error);
+    }
+
     const index = Number(ui.scale.value);
 
     midi?.setScale(index);
@@ -141,10 +148,6 @@ async function boot() {
     decay();
 
     setStatus("INITIALISATION");
-
-    audio.start().catch(error => {
-        console.info("[AUDIO] En attente d'un geste utilisateur.", error);
-    });
 
     midi = new TouchMeMidiInput(eventBus, event => {
         if (event.type === "connected") {
