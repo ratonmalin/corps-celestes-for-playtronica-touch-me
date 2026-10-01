@@ -5,9 +5,10 @@ import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
 const $ = id => document.getElementById(id);
 const ui = {
-    connect: $("connect"), audio: $("audio"), fullscreen: $("fullscreen"), status: $("status"), device: $("device"),
-    led: $("led"), cc: $("cc-value"), freq: $("freq"), sensitivity: $("sensitivity"),
-    sensOut: $("sens-out"), scale: $("scale")
+    fullscreen: $("fullscreen"), status: $("status"), device: $("device"),
+    led: $("led"), cc: $("cc-value"), freq: $("freq"),
+    sensitivity: $("sensitivity"), sensOut: $("sens-out"),
+    volume: $("volume"), volumeOut: $("volume-out"), scale: $("scale")
 };
 
 const eventBus = new EventBus();
@@ -19,22 +20,28 @@ let filteredIntensity = 0;
 let lastIntensityAt = 0;
 
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
+
 function frequencyForNote(note) {
     if (!Number.isFinite(note)) return 0;
     return 440 * Math.pow(2, (note - 69) / 12);
 }
+
 function renderSignal(note = null) {
     const sensitivity = Number(ui.sensitivity.value) || 1;
     const effective = clamp(filteredIntensity * sensitivity);
     ui.cc.textContent = midi?.lastControllerValue == null ? "090" : String(Math.round(midi.lastControllerValue)).padStart(3, "0");
+
     const frequency = frequencyForNote(note);
     if (frequency > 0) {
         ui.freq.textContent = Math.round(frequency) + " Hz";
     }
+
     ui.led.classList.toggle("on", connected || effective > 0.015);
 }
+
 function handleSignal(event) {
     if (!event) return;
+
     if (event.type === "connected") {
         connected = true;
         ui.device.textContent = String(event.device).toUpperCase();
@@ -42,32 +49,19 @@ function handleSignal(event) {
         ui.led.classList.add("on");
         return;
     }
-    if (event.type === "status") { ui.status.textContent = event.status; return; }
+
+    if (event.type === "status") {
+        ui.status.textContent = event.status;
+        return;
+    }
+
     if (event.type === "intensity" || event.type === "note") {
         filteredIntensity += (clamp(event.value) - filteredIntensity) * (event.type === "note" ? 0.5 : 0.28);
         lastIntensityAt = performance.now();
         renderSignal(event.note ?? null);
     }
 }
-async function connect() {
-    if (!midi) {
-        midi = new TouchMeMidiInput(eventBus, handleSignal);
-        await midi.start();
-    }
-    if (midi.input) { connected = true; ui.status.textContent = "CAPTEUR CONNECTÉ · EN ATTENTE"; }
-}
-async function enableAudio() {
-    try {
-        await audioEngine.start();
-        ui.audio.textContent = "AUDIO ACTIVÉ";
-        ui.status.textContent = connected ? "CAPTEUR CONNECTÉ · AUDIO ACTIF" : "AUDIO ACTIF · CONNECTEZ LE CAPTEUR";
-    } catch (error) {
-        ui.status.textContent = "WEB AUDIO INDISPONIBLE";
-        console.warn("[AUDIO]", error);
-    }
-}
-ui.connect.addEventListener("click", connect);
-ui.audio.addEventListener("click", enableAudio);
+
 ui.fullscreen.addEventListener("click", async () => {
     try {
         if (!document.fullscreenElement) {
@@ -81,37 +75,93 @@ ui.fullscreen.addEventListener("click", async () => {
         console.warn("[FULLSCREEN]", error);
     }
 });
+
 document.addEventListener("fullscreenchange", () => {
-    ui.fullscreen.textContent = document.fullscreenElement ? "QUITTER" : "PLEIN ÉCRAN";
+    ui.fullscreen.textContent = document.fullscreenElement ? "QUITTER" : "FULL SCREEN";
 });
+
 ui.sensitivity.addEventListener("input", () => {
     ui.sensOut.textContent = Number(ui.sensitivity.value).toFixed(1) + "×";
     renderSignal();
 });
+
+ui.volume.addEventListener("input", () => {
+    const value = Number(ui.volume.value);
+    ui.volumeOut.textContent = Math.round(value * 100) + "%";
+    audioEngine.setVolume(value);
+    localStorage.setItem("corps-celestes-volume", String(value));
+});
+
 ui.scale.addEventListener("change", () => {
     eventBus.emit({ type: "scalechange", index: Number(ui.scale.value) });
     ui.status.textContent = connected ? "CAPTEUR CONNECTÉ · EN ATTENTE" : "EN ATTENTE DU TOUCHME";
 });
+
 eventBus.on("noteon", event => {
     const value = Number.isFinite(event.touchIntensity) ? event.touchIntensity : event.velocity;
     filteredIntensity += (clamp(value) - filteredIntensity) * 0.5;
     lastIntensityAt = performance.now();
     renderSignal(event.note);
 });
-eventBus.on("noteoff", () => { lastIntensityAt = performance.now(); renderSignal(); });
+
+eventBus.on("noteoff", () => {
+    lastIntensityAt = performance.now();
+    renderSignal();
+});
+
 function decay() {
     const now = performance.now();
+
     if (lastIntensityAt && now - lastIntensityAt > 120) {
         filteredIntensity *= 0.985;
-        if (filteredIntensity < 0.002) filteredIntensity = 0;
+
+        if (filteredIntensity < 0.002) {
+            filteredIntensity = 0;
+        }
+
         renderSignal();
     }
+
     requestAnimationFrame(decay);
 }
-visualEngine.start();
-ui.sensOut.textContent = Number(ui.sensitivity.value).toFixed(1) + "×";
-eventBus.emit({ type: "scalechange", index: Number(ui.scale.value || 0) });
-ui.led.classList.remove("on");
-renderSignal();
-decay();
-console.log("[TOUCHME] Corps Célestes — moteur original chargé.");
+
+async function boot() {
+    const savedVolume = Number(localStorage.getItem("corps-celestes-volume"));
+
+    if (Number.isFinite(savedVolume)) {
+        ui.volume.value = String(clamp(savedVolume));
+    }
+
+    const volume = Number(ui.volume.value);
+    ui.volumeOut.textContent = Math.round(volume * 100) + "%";
+    audioEngine.setVolume(volume);
+
+    visualEngine.start();
+    ui.sensOut.textContent = Number(ui.sensitivity.value).toFixed(1) + "×";
+    eventBus.emit({ type: "scalechange", index: Number(ui.scale.value || 0) });
+    ui.led.classList.remove("on");
+    renderSignal();
+    decay();
+
+    await audioEngine.start().catch(error => {
+        ui.status.textContent = "AUDIO EN ATTENTE";
+        console.warn("[AUDIO]", error);
+    });
+
+    midi = new TouchMeMidiInput(eventBus, handleSignal);
+    await midi.start();
+
+    if (midi.input) {
+        connected = true;
+        ui.status.textContent = "CAPTEUR CONNECTÉ · EN ATTENTE";
+        ui.device.textContent = String(midi.input.name || "TOUCHME").toUpperCase();
+        ui.led.classList.add("on");
+    }
+}
+
+boot().catch(error => {
+    ui.status.textContent = "INITIALISATION IMPOSSIBLE";
+    console.warn("[TOUCHME]", error);
+});
+
+console.log("[TOUCHME] Corps Célestes — initialisation automatique.");
