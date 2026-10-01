@@ -84,7 +84,7 @@ h1 {
 }
 
 .scale-control {
-    width: 150px;
+    width: 230px;
     appearance: none;
     text-align: right;
 }
@@ -217,7 +217,7 @@ h1 {
         padding: 6px 5px;
         font-size: 9px;
     }
-    .scale-control { width: 108px; }
+    .scale-control { width: 170px; }
     .status-bar { top: 62px; right: 16px; gap: 7px; font-size: 9px; }
     .technical {
         left: 16px;
