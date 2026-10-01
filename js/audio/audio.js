@@ -18,41 +18,39 @@ export class AudioEngine {
         this.reverbInput = null;
         this.reverb = null;
         this.reverbGain = null;
+        this.delayInput = null;
+        this.delayNode = null;
+        this.delayFeedback = null;
+        this.delayGain = null;
+        this.echoInput = null;
+        this.echoNode = null;
+        this.echoFeedback = null;
+        this.echoGain = null;
         this.activeVoices = new Map();
         this.pendingNotes = new Map();
         this.maxVoices = 16;
         this.started = false;
         this.volume = 1;
+        this.reverbAmount = 0.58;
+        this.delayAmount = 0;
+        this.echoAmount = 0;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
 
-        document.addEventListener(
-            "pointerdown",
-            this.handleUserGesture,
-            { passive: true }
-        );
-        document.addEventListener(
-            "keydown",
-            this.handleUserGesture,
-            { passive: true }
-        );
+        document.addEventListener("pointerdown", this.handleUserGesture, { passive: true });
+        document.addEventListener("keydown", this.handleUserGesture, { passive: true });
 
         eventBus.on("noteon", this.handleEvent);
         eventBus.on("noteoff", this.handleEvent);
 
         this.handleWindowBlur = () => this.panic();
         this.handleVisibilityChange = () => {
-            if (document.visibilityState !== "visible") {
-                this.panic();
-            }
+            if (document.visibilityState !== "visible") this.panic();
         };
 
         window.addEventListener("blur", this.handleWindowBlur);
-        document.addEventListener(
-            "visibilitychange",
-            this.handleVisibilityChange
-        );
+        document.addEventListener("visibilitychange", this.handleVisibilityChange);
     }
 
     setVolume(value) {
@@ -64,17 +62,45 @@ export class AudioEngine {
         if (this.masterGain && this.audioContext) {
             const now = this.audioContext.currentTime;
             this.masterGain.gain.cancelScheduledValues(now);
-            this.masterGain.gain.setTargetAtTime(
-                this.volume,
-                now,
-                0.02
+            this.masterGain.gain.setTargetAtTime(this.volume, now, 0.02);
+        }
+    }
+
+    setReverb(value) {
+        this.reverbAmount = Math.max(0, Math.min(1, Number(value) || 0));
+        if (this.reverbGain && this.audioContext) {
+            this.reverbGain.gain.setTargetAtTime(
+                this.reverbAmount * 0.58,
+                this.audioContext.currentTime,
+                0.025
+            );
+        }
+    }
+
+    setDelay(value) {
+        this.delayAmount = Math.max(0, Math.min(1, Number(value) || 0));
+        if (this.delayGain && this.audioContext) {
+            this.delayGain.gain.setTargetAtTime(
+                this.delayAmount * 0.28,
+                this.audioContext.currentTime,
+                0.025
+            );
+        }
+    }
+
+    setEcho(value) {
+        this.echoAmount = Math.max(0, Math.min(1, Number(value) || 0));
+        if (this.echoGain && this.audioContext) {
+            this.echoGain.gain.setTargetAtTime(
+                this.echoAmount * 0.24,
+                this.audioContext.currentTime,
+                0.025
             );
         }
     }
 
     async handleUserGesture() {
         if (this.started) return;
-
         try {
             await this.start();
         } catch (error) {
@@ -84,24 +110,14 @@ export class AudioEngine {
 
     async start() {
         if (!this.audioContext) {
-            const AudioContext =
-                window.AudioContext ||
-                window.webkitAudioContext;
-
-            if (!AudioContext) {
-                throw new Error("Web Audio API indisponible.");
-            }
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) throw new Error("Web Audio API indisponible.");
 
             this.audioContext = new AudioContext();
-
-            this.masterGain =
-                this.audioContext.createGain();
-
+            this.masterGain = this.audioContext.createGain();
             this.masterGain.gain.value = this.volume;
 
-            this.compressor =
-                this.audioContext.createDynamicsCompressor();
-
+            this.compressor = this.audioContext.createDynamicsCompressor();
             this.compressor.threshold.value = -24;
             this.compressor.knee.value = 30;
             this.compressor.ratio.value = 1.5;
@@ -109,6 +125,7 @@ export class AudioEngine {
             this.compressor.release.value = 1.2;
 
             this.createReverb();
+            this.createDelayEffects();
 
             this.masterGain.connect(this.compressor);
             this.compressor.connect(this.audioContext.destination);
@@ -119,9 +136,7 @@ export class AudioEngine {
         }
 
         if (this.audioContext.state !== "running") {
-            throw new Error(
-                `AudioContext state: ${this.audioContext.state}`
-            );
+            throw new Error(`AudioContext state: ${this.audioContext.state}`);
         }
 
         this.started = true;
@@ -129,49 +144,31 @@ export class AudioEngine {
 
     createReverb() {
         const context = this.audioContext;
-
         this.reverbInput = context.createGain();
 
         const duration = 2.8;
         const decay = 5.5;
         const sampleRate = context.sampleRate;
         const length = Math.floor(sampleRate * duration);
-
-        const impulse =
-            context.createBuffer(2, length, sampleRate);
+        const impulse = context.createBuffer(2, length, sampleRate);
 
         for (let channel = 0; channel < 2; channel++) {
             const data = impulse.getChannelData(channel);
-
             for (let i = 0; i < length; i++) {
                 const time = i / sampleRate;
-
-                const envelope =
-                    Math.pow(
-                        1 - time / duration,
-                        decay
-                    );
-
+                const envelope = Math.pow(1 - time / duration, decay);
                 const noise = Math.random() * 2 - 1;
                 const stereo = channel === 0 ? 1 : 0.92;
-
                 data[i] = noise * envelope * stereo;
             }
         }
 
-        this.reverb =
-            context.createConvolver();
-
+        this.reverb = context.createConvolver();
         this.reverb.buffer = impulse;
-
-        this.reverbGain =
-            context.createGain();
-
+        this.reverbGain = context.createGain();
         this.reverbGain.gain.value = 0.58;
 
-        const reverbFilter =
-            context.createBiquadFilter();
-
+        const reverbFilter = context.createBiquadFilter();
         reverbFilter.type = "lowpass";
         reverbFilter.frequency.value = 2600;
         reverbFilter.Q.value = 0.2;
@@ -182,99 +179,98 @@ export class AudioEngine {
         this.reverbGain.connect(this.masterGain);
     }
 
-    handleEvent(event) {
-        if (!event || !Number.isFinite(event.note)) {
-            return;
-        }
+    createDelayEffects() {
+        const context = this.audioContext;
 
-        if (event.type !== "noteon" && event.type !== "noteoff") {
-            return;
-        }
+        this.delayInput = context.createGain();
+        this.delayNode = context.createDelay(1);
+        this.delayFeedback = context.createGain();
+        this.delayGain = context.createGain();
+
+        this.delayNode.delayTime.value = 0.24;
+        this.delayFeedback.gain.value = 0.28;
+        this.delayGain.gain.value = 0;
+
+        this.delayInput.connect(this.delayNode);
+        this.delayNode.connect(this.delayFeedback);
+        this.delayFeedback.connect(this.delayNode);
+        this.delayNode.connect(this.delayGain);
+        this.delayGain.connect(this.masterGain);
+
+        this.echoInput = context.createGain();
+        this.echoNode = context.createDelay(1);
+        this.echoFeedback = context.createGain();
+        this.echoGain = context.createGain();
+
+        this.echoNode.delayTime.value = 0.52;
+        this.echoFeedback.gain.value = 0.34;
+        this.echoGain.gain.value = 0;
+
+        this.echoInput.connect(this.echoNode);
+        this.echoNode.connect(this.echoFeedback);
+        this.echoFeedback.connect(this.echoNode);
+        this.echoNode.connect(this.echoGain);
+        this.echoGain.connect(this.masterGain);
+
+        this.masterGain.connect(this.delayInput);
+        this.masterGain.connect(this.echoInput);
+    }
+
+    handleEvent(event) {
+        if (!event || !Number.isFinite(event.note)) return;
+        if (event.type !== "noteon" && event.type !== "noteoff") return;
 
         const pendingKey =
             `${event.source}-${event.channel}-${Number.isFinite(event.rawNote) ? event.rawNote : event.note}`;
 
         if (!this.started) {
-            if (event.type === "noteon") {
-                this.pendingNotes.set(pendingKey, event);
-            } else {
-                this.pendingNotes.delete(pendingKey);
-            }
+            if (event.type === "noteon") this.pendingNotes.set(pendingKey, event);
+            else this.pendingNotes.delete(pendingKey);
 
-            this.start()
-                .then(() => {
-                    for (const [key, pendingEvent] of this.pendingNotes) {
-                        this.pendingNotes.delete(key);
-                        if (pendingEvent.type === "noteon") {
-                            this.noteOn(pendingEvent);
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.warn("[AUDIO] Waiting for user interaction:", error);
-                });
-
+            this.start().then(() => {
+                for (const [key, pendingEvent] of this.pendingNotes) {
+                    this.pendingNotes.delete(key);
+                    if (pendingEvent.type === "noteon") this.noteOn(pendingEvent);
+                }
+            }).catch(error => {
+                console.warn("[AUDIO] Waiting for user interaction:", error);
+            });
             return;
         }
 
-        if (event.type === "noteon") {
-            this.noteOn(event);
-        }
-
-        if (event.type === "noteoff") {
-            this.noteOff(event);
-        }
+        if (event.type === "noteon") this.noteOn(event);
+        if (event.type === "noteoff") this.noteOff(event);
     }
 
     noteOn(event) {
         if (!this.audioContext || !this.masterGain) return;
 
         const audioNote = event.note;
-        const voiceKey =
-            Number.isFinite(event.rawNote)
-                ? event.rawNote
-                : event.note;
+        const voiceKey = Number.isFinite(event.rawNote) ? event.rawNote : event.note;
+        const voiceId = `${event.source}-${event.channel}-${voiceKey}`;
 
-        const voiceId =
-            `${event.source}-${event.channel}-${voiceKey}`;
-
-        if (this.activeVoices.has(voiceId)) {
-            return;
-        }
+        if (this.activeVoices.has(voiceId)) return;
 
         if (this.activeVoices.size >= this.maxVoices) {
             const oldestId = this.activeVoices.keys().next().value;
             const oldestVoice = this.activeVoices.get(oldestId);
-
             if (oldestVoice) {
-                try {
-                    oldestVoice.release();
-                } catch (error) {
-                    console.warn("[AUDIO] Voice limit recovery:", error);
-                }
+                try { oldestVoice.release(); }
+                catch (error) { console.warn("[AUDIO] Voice limit recovery:", error); }
             }
-
             this.activeVoices.delete(oldestId);
         }
 
-        const velocity = Math.max(
-            0,
-            Math.min(
-                1,
-                Number.isFinite(event.velocity) ? event.velocity : 1
-            )
-        );
+        const velocity = Math.max(0, Math.min(1,
+            Number.isFinite(event.velocity) ? event.velocity : 1
+        ));
 
-        const voice =
-            new Voice(
-                this.audioContext,
-                this.masterGain,
-                this.reverbInput,
-                {
-                    note: audioNote,
-                    velocity
-                }
-            );
+        const voice = new Voice(
+            this.audioContext,
+            this.masterGain,
+            this.reverbInput,
+            { note: audioNote, velocity }
+        );
 
         this.activeVoices.set(voiceId, voice);
         voice.start();
@@ -287,39 +283,22 @@ export class AudioEngine {
 
         for (const voice of voices) {
             let nearestDistance = Infinity;
-
             for (const other of voices) {
                 if (other === voice) continue;
-
-                nearestDistance = Math.min(
-                    nearestDistance,
-                    Math.abs(other.note - voice.note)
-                );
+                nearestDistance = Math.min(nearestDistance, Math.abs(other.note - voice.note));
             }
-
             voice.setSystemState({
                 count,
-                nearestDistance: Number.isFinite(nearestDistance)
-                    ? nearestDistance
-                    : null
+                nearestDistance: Number.isFinite(nearestDistance) ? nearestDistance : null
             });
         }
     }
 
     noteOff(event) {
-        const voiceKey =
-            Number.isFinite(event.rawNote)
-                ? event.rawNote
-                : event.note;
-
-        const voiceId =
-            `${event.source}-${event.channel}-${voiceKey}`;
-
+        const voiceKey = Number.isFinite(event.rawNote) ? event.rawNote : event.note;
+        const voiceId = `${event.source}-${event.channel}-${voiceKey}`;
         const voice = this.activeVoices.get(voiceId);
-
-        if (!voice) {
-            return;
-        }
+        if (!voice) return;
 
         voice.release();
         this.activeVoices.delete(voiceId);
@@ -328,25 +307,15 @@ export class AudioEngine {
 
     panic() {
         this.pendingNotes.clear();
-
         for (const voice of this.activeVoices.values()) {
-            try {
-                voice.release(true);
-            } catch (error) {
-                console.warn("[AUDIO] Panic release:", error);
-            }
+            try { voice.release(true); }
+            catch (error) { console.warn("[AUDIO] Panic release:", error); }
         }
-
         this.activeVoices.clear();
     }
 
     async resume() {
-        if (!this.audioContext) {
-            return;
-        }
-
-        if (this.audioContext.state === "suspended") {
-            await this.audioContext.resume();
-        }
+        if (!this.audioContext) return;
+        if (this.audioContext.state === "suspended") await this.audioContext.resume();
     }
 }
