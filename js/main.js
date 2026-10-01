@@ -151,12 +151,31 @@ async function boot() {
     midi = new TouchMeMidiInput(eventBus, handleSignal);
     await midi.start();
 
-    if (midi.input) {
-        connected = true;
-        ui.status.textContent = "CAPTEUR CONNECTÉ · EN ATTENTE";
-        ui.device.textContent = String(midi.input.name || "TOUCHME").toUpperCase();
-        ui.led.classList.add("on");
-    }
+    const waitForTouchMe = () => {
+        if (!midi?.input) {
+            midi.refreshInput();
+        }
+
+        if (midi?.input) {
+            connected = true;
+            ui.status.textContent = "CAPTEUR CONNECTÉ · EN ATTENTE";
+            ui.device.textContent = String(midi.input.name || "TOUCHME").toUpperCase();
+            ui.led.classList.add("on");
+            return;
+        }
+
+        ui.status.textContent = "RECHERCHE DU TOUCHME";
+        window.setTimeout(waitForTouchMe, 750);
+    };
+
+    waitForTouchMe();
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            audioEngine.resume().catch(() => {});
+            waitForTouchMe();
+        }
+    });
 }
 
 boot().catch(error => {
