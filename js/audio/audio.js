@@ -31,7 +31,7 @@ export class AudioEngine {
         this.maxVoices = 16;
         this.started = false;
         this.volume = 1;
-        this.reverbAmount = 0.58;
+        this.reverbAmount = 1;
         this.delayAmount = 0;
         this.echoAmount = 0;
 
@@ -212,8 +212,7 @@ export class AudioEngine {
         this.echoNode.connect(this.echoGain);
         this.echoGain.connect(this.masterGain);
 
-        this.masterGain.connect(this.delayInput);
-        this.masterGain.connect(this.echoInput);
+
     }
 
     handleEvent(event) {
@@ -269,6 +268,8 @@ export class AudioEngine {
             this.audioContext,
             this.masterGain,
             this.reverbInput,
+            this.delayInput,
+            this.echoInput,
             { note: audioNote, velocity }
         );
 
