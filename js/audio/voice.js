@@ -1,3 +1,5 @@
+import { getStringSample } from "./string-samples.js";
+
 export class Voice {
 
     constructor(
@@ -26,6 +28,7 @@ export class Voice {
         this.oscillatorA = null;
         this.oscillatorB = null;
         this.oscillatorC = null;
+        this.sampleSources = [];
 
         this.oscillatorAGain = null;
         this.oscillatorBGain = null;
@@ -67,6 +70,10 @@ export class Voice {
         const context = this.audioContext;
         const now = context.currentTime;
         this.startedAt = now;
+
+        if (this.instrument === "strings") {
+            return this.startSampledStrings();
+        }
 
         const frequency =
             440 * Math.pow(
@@ -453,6 +460,101 @@ export class Voice {
     }
 
 
+    async startSampledStrings() {
+        const context = this.audioContext;
+        const now = context.currentTime;
+        const intervals = this.chordIntervals;
+
+        // Open orchestral voicing: cello carries the root, viola the third,
+        // violin the fifth one octave above. The actual pitch is sampled and
+        // only lightly transposed with AudioBufferSourceNode.playbackRate.
+        const targets = [
+            { instrument: "cello", note: this.baseNote, pan: -0.18, gain: 0.48 },
+            { instrument: "viola", note: this.baseNote + intervals[1], pan: 0, gain: 0.34 },
+            { instrument: "violin", note: this.baseNote + intervals[2] + 12, pan: 0.18, gain: 0.42 }
+        ];
+
+        const samples = await Promise.all(
+            targets.map(target =>
+                getStringSample(
+                    context,
+                    target.instrument,
+                    target.note,
+                    this.velocity
+                )
+            )
+        );
+
+        if (this.isReleased) return;
+
+        this.filter = context.createBiquadFilter();
+        this.filter.type = "lowpass";
+        this.filter.frequency.setValueAtTime(5200, now);
+        this.filter.Q.setValueAtTime(0.35, now);
+
+        this.gain = context.createGain();
+        const peakGain = 0.095 * this.velocity;
+        this.gain.gain.setValueAtTime(0.0001, now);
+        this.gain.gain.exponentialRampToValueAtTime(
+            Math.max(peakGain, 0.0002),
+            now + 0.12
+        );
+
+        this.panner = context.createStereoPanner();
+        this.panner.pan.setValueAtTime(0, now);
+
+        this.reverbSend = context.createGain();
+        this.reverbSend.gain.setValueAtTime(1.05, now);
+
+        this.filter.connect(this.gain);
+        this.gain.connect(this.panner);
+        this.panner.connect(this.destination);
+        this.gain.connect(this.reverbSend);
+        this.reverbSend.connect(this.reverbInput);
+
+        for (let index = 0; index < targets.length; index++) {
+            const sample = samples[index];
+            if (!sample?.buffer) continue;
+
+            const source = context.createBufferSource();
+            source.buffer = sample.buffer;
+            source.playbackRate.setValueAtTime(
+                Math.pow(2, (targets[index].note - sample.rootPitch) / 12),
+                now
+            );
+
+            // The recorded sustain is looped after the bow attack. This keeps
+            // a held TouchMe note alive without repeatedly retriggering the bow.
+            if (sample.buffer.duration > 0.8) {
+                source.loop = true;
+                source.loopStart = Math.min(0.35, sample.buffer.duration * 0.25);
+                source.loopEnd = Math.max(
+                    source.loopStart + 0.1,
+                    sample.buffer.duration - 0.08
+                );
+            }
+
+            const layerGain = context.createGain();
+            layerGain.gain.setValueAtTime(targets[index].gain, now);
+
+            const layerPan = context.createStereoPanner();
+            layerPan.pan.setValueAtTime(targets[index].pan, now);
+
+            source.connect(layerGain);
+            layerGain.connect(layerPan);
+            layerPan.connect(this.filter);
+            source.start(now);
+
+            this.sampleSources.push({ source, layerGain, layerPan });
+        }
+
+        this.maxHoldTimer = window.setTimeout(
+            () => this.release(),
+            12000
+        );
+    }
+
+
     setSystemState({ count = 1, nearestDistance = null } = {}) {
         if (!this.audioContext || !this.gain || this.isReleased) {
             return;
@@ -618,17 +720,15 @@ export class Voice {
             );
 
 
-        this.oscillatorA.stop(
-            now + releaseTime + 0.1
-        );
-
-        this.oscillatorB.stop(
-            now + releaseTime + 0.1
-        );
-
-        this.oscillatorC.stop(
-            now + releaseTime + 0.1
-        );
+        if (this.sampleSources.length) {
+            for (const { source } of this.sampleSources) {
+                try { source.stop(now + releaseTime + 0.1); } catch {}
+            }
+        } else {
+            this.oscillatorA.stop(now + releaseTime + 0.1);
+            this.oscillatorB.stop(now + releaseTime + 0.1);
+            this.oscillatorC.stop(now + releaseTime + 0.1);
+        }
 
         this.lfo.stop(
             now + releaseTime + 0.1
@@ -665,6 +765,13 @@ export class Voice {
             this.releaseTimer = null;
         }
 
+
+        for (const { source, layerGain, layerPan } of this.sampleSources) {
+            try { source.disconnect(); } catch {}
+            try { layerGain.disconnect(); } catch {}
+            try { layerPan.disconnect(); } catch {}
+        }
+        this.sampleSources = [];
 
         try {
             this.oscillatorA?.disconnect();
