@@ -16,7 +16,7 @@ export const SCALES = [
     }
 ];
 
-const TOUCHME_ROOT_NOTE = 36;
+const TOUCHME_ROOT_NOTE = 24;
 const TOUCHME_MIN_NOTE = 48;
 const TOUCHME_MAX_NOTE = 84;
 
