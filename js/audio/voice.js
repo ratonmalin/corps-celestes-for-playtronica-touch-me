@@ -135,8 +135,8 @@ export class Voice {
         this.oscillatorDGain = context.createGain();
 
         this.oscillatorAGain.gain.setValueAtTime(0.72, now);
-        this.oscillatorBGain.gain.setValueAtTime(0.24, now);
-        this.oscillatorCGain.gain.setValueAtTime(0.08, now);
+        this.oscillatorBGain.gain.setValueAtTime(0.18, now);
+        this.oscillatorCGain.gain.setValueAtTime(0.045, now);
         this.oscillatorDGain.gain.setValueAtTime(0.0001, now);
 
         this.oscillatorA.connect(this.oscillatorAGain);
@@ -190,13 +190,13 @@ export class Voice {
 
         this.filterLfo.frequency
             .setValueAtTime(
-                0.05,
+                0.035,
                 now
             );
 
         this.filterLfoGain.gain
             .setValueAtTime(
-                280,
+                180,
                 now
             );
 
@@ -229,7 +229,7 @@ export class Voice {
 
         this.lfoGain.gain
             .setValueAtTime(
-                1.2 + this.velocity * 0.8,
+                1.8 + this.velocity * 1.2,
                 now
             );
 
@@ -307,7 +307,7 @@ export class Voice {
 
         this.reverbSend.gain
             .setValueAtTime(
-                1.15,
+                1.55,
                 now
             );
 
@@ -365,25 +365,37 @@ export class Voice {
         this.holdBloomTimer = window.setTimeout(() => {
             if (this.isReleased || !this.audioContext) return;
             const bloomNow = this.audioContext.currentTime;
+            // The hold becomes a real second state: the body opens,
+            // gains a low resonance, and moves further into the reverberant space.
             this.oscillatorDGain?.gain.setTargetAtTime(
-                0.025 * this.velocity,
+                0.075 * this.velocity,
                 bloomNow,
-                2.8
+                1.8
+            );
+            this.oscillatorBGain?.gain.setTargetAtTime(
+                0.30,
+                bloomNow,
+                1.6
             );
             this.oscillatorCGain?.gain.setTargetAtTime(
-                0.105,
+                0.12,
                 bloomNow,
-                3.4
+                2.0
             );
             this.filter?.frequency.setTargetAtTime(
-                2050,
+                3200,
                 bloomNow,
-                3.8
+                2.4
+            );
+            this.filterLfoGain?.gain.setTargetAtTime(
+                420,
+                bloomNow,
+                2.0
             );
             this.reverbSend?.gain.setTargetAtTime(
-                1.48,
+                2.35,
                 bloomNow,
-                4.2
+                2.2
             );
         }, 3500);
 
