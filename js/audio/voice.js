@@ -90,7 +90,7 @@ export class Voice {
             context.createOscillator();
 
         this.oscillatorA.type =
-            this.instrument === "strings" ? "sawtooth"
+            this.instrument === "strings" ? "triangle"
             : this.instrument === "harp" ? "triangle"
             : "sine";
 
@@ -121,7 +121,7 @@ export class Voice {
 
         this.oscillatorB.detune
             .setValueAtTime(
-                this.instrument === "strings" ? -11 : 5,
+                this.instrument === "strings" ? -2 : 5,
                 now
             );
 
@@ -151,7 +151,7 @@ export class Voice {
 
         this.oscillatorC.detune
             .setValueAtTime(
-                this.instrument === "strings" ? 9
+                this.instrument === "strings" ? 2
                     : this.instrument === "harp" ? -3
                     : -4,
                 now
@@ -172,7 +172,7 @@ export class Voice {
 
         const mix =
             this.instrument === "strings"
-                ? [0.48, 0.38, 0.14]
+                ? [0.58, 0.30, 0.12]
                 : this.instrument === "harp"
                     ? [0.62, 0.24, 0.14]
                     : [0.72, 0.24, 0.08];
@@ -481,7 +481,7 @@ export class Voice {
 
         const pitchBase =
             this.instrument === "strings"
-                ? 0.8 + this.velocity * 0.7
+                ? 1.1 + this.velocity * 0.6
                 : this.instrument === "harp"
                     ? 0.35
                     : 1.2 + this.velocity * 0.8;
@@ -538,7 +538,7 @@ export class Voice {
 
         const internalDetune =
             this.instrument === "strings"
-                ? -11 + systemLevel * 0.7 + proximity * 0.8
+                ? -2 + systemLevel * 0.35 + proximity * 0.45
                 : 5 + systemLevel * 2.2 + proximity * 3.5;
 
         this.oscillatorB?.detune.setTargetAtTime(
