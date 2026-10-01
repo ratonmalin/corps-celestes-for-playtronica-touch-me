@@ -35,27 +35,21 @@
         </div>
 
         <div class="effect-controls" aria-label="Effets audio">
-            <div class="effect-knob" data-effect="reverb" data-value="1" role="slider" aria-label="Reverb" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1" tabindex="0">
-                <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true">
-                    <circle class="effect-track" cx="20" cy="20" r="15"></circle>
-                    <circle class="effect-arc" cx="20" cy="20" r="15"></circle>
-                </svg>
+            <label class="effect-slider">
                 <span>REVERB</span>
-            </div>
-            <div class="effect-knob" data-effect="delay" data-value="0" role="slider" aria-label="Delay" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" tabindex="0">
-                <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true">
-                    <circle class="effect-track" cx="20" cy="20" r="15"></circle>
-                    <circle class="effect-arc" cx="20" cy="20" r="15"></circle>
-                </svg>
+                <output class="effect-value">58%</output>
+                <input type="range" min="0" max="1" step=".01" value=".58" data-effect="reverb" aria-label="Reverb">
+            </label>
+            <label class="effect-slider">
                 <span>DELAY</span>
-            </div>
-            <div class="effect-knob" data-effect="echo" data-value="0" role="slider" aria-label="Echo" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" tabindex="0">
-                <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true">
-                    <circle class="effect-track" cx="20" cy="20" r="15"></circle>
-                    <circle class="effect-arc" cx="20" cy="20" r="15"></circle>
-                </svg>
+                <output class="effect-value">0%</output>
+                <input type="range" min="0" max="1" step=".01" value="0" data-effect="delay" aria-label="Delay">
+            </label>
+            <label class="effect-slider">
                 <span>ECHO</span>
-            </div>
+                <output class="effect-value">0%</output>
+                <input type="range" min="0" max="1" step=".01" value="0" data-effect="echo" aria-label="Echo">
+            </label>
         </div>
 
         <div class="technical">
@@ -74,6 +68,6 @@
         </div>
     </main>
 
-    <script type="module" src="./js/main.js?v=20261002-11"></script>
+    <script type="module" src="./js/main.js?v=20261002-12"></script>
 </body>
 </html>
