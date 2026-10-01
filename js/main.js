@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js";
+import { AudioEngine } from "./audio/audio.js?v=5";
 import { VisualEngine } from "./visuals/visual-engine.js";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
