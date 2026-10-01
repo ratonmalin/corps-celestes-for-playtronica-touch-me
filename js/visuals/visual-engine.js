@@ -939,7 +939,7 @@ export class VisualEngine {
                 11 +
                 item.velocity * 13 +
                 (item.duration ? Math.min(item.duration, 3) * 1.8 : 0) +
-                holdEase * 16;
+                holdEase * 10;
 
             const life = item.releaseLife;
 
@@ -1014,26 +1014,26 @@ export class VisualEngine {
                 ctx.globalCompositeOperation = "lighter";
 
                 const burst = 1 - unlockPulse;
-                const burstRadius = radius * (2.2 + burst * 12);
+                const burstRadius = radius * (1.7 + burst * 8);
                 ctx.beginPath();
                 ctx.ellipse(
                     item.x,
                     item.y,
-                    burstRadius * 1.9,
-                    burstRadius * 0.72,
+                    burstRadius * 1.55,
+                    burstRadius * 0.62,
                     item.phase + now / 900,
                     0,
                     Math.PI * 2
                 );
                 ctx.strokeStyle =
                     `rgba(${this.hexToRgba(item.hue, 0.16 * unlockPulse * life)})`;
-                ctx.lineWidth = 1.1 + unlockPulse * 1.4;
+                ctx.lineWidth = 0.8 + unlockPulse * 1.0;
                 ctx.stroke();
 
-                for (let ray = 0; ray < 12; ray++) {
+                for (let ray = 0; ray < 10; ray++) {
                     const angle =
                         item.phase +
-                        ray * (Math.PI * 2 / 12) +
+                        ray * (Math.PI * 2 / 10) +
                         now / 1800;
                     const inner = burstRadius * 0.72;
                     const outer = burstRadius * (1.05 + unlockPulse * 0.35);
@@ -1048,8 +1048,8 @@ export class VisualEngine {
                         item.y + Math.sin(angle) * outer * 0.68
                     );
                     ctx.strokeStyle =
-                        `rgba(${this.hexToRgba(item.hue, 0.10 * unlockPulse * life)})`;
-                    ctx.lineWidth = 0.65 + unlockPulse * 0.7;
+                        `rgba(${this.hexToRgba(item.hue, 0.075 * unlockPulse * life)})`;
+                    ctx.lineWidth = 0.55 + unlockPulse * 0.5;
                     ctx.stroke();
                 }
 
@@ -1074,8 +1074,8 @@ export class VisualEngine {
                     ctx.ellipse(
                         item.x,
                         item.y,
-                        radius * (5.2 + holdEase * 5.6),
-                        radius * (1.15 + holdEase * 2.2),
+                        radius * (4.6 + holdEase * 4.2),
+                        radius * (1.05 + holdEase * 1.7),
                         shellAngle,
                         0,
                         Math.PI * 2
@@ -1091,7 +1091,7 @@ export class VisualEngine {
                 ctx.arc(
                     item.x,
                     item.y,
-                    radius * (6.0 + holdEase * 5 + pulse * 2.5),
+                    radius * (5.2 + holdEase * 3.8 + pulse * 1.8),
                     0,
                     Math.PI * 2
                 );
@@ -1107,7 +1107,7 @@ export class VisualEngine {
                         now / (1700 + satellite * 190) +
                         satellite * (Math.PI * 2 / 5);
                     const distance =
-                        radius * (5.2 + holdEase * 9.5);
+                        radius * (4.8 + holdEase * 7);
                     const x =
                         item.x + Math.cos(angle) * distance;
                     const y =
@@ -1117,7 +1117,7 @@ export class VisualEngine {
                     ctx.arc(
                         x,
                         y,
-                        0.9 + holdEase * 1.5,
+                        0.8 + holdEase * 1.1,
                         0,
                         Math.PI * 2
                     );
