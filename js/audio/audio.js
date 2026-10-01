@@ -31,7 +31,7 @@ export class AudioEngine {
         this.maxVoices = 16;
         this.started = false;
         this.volume = 1;
-        this.reverbAmount = 1;
+        this.reverbAmount = 2;
         this.delayAmount = 0;
         this.echoAmount = 0;
 
@@ -81,7 +81,7 @@ export class AudioEngine {
         this.delayAmount = Math.max(0, Math.min(1, Number(value) || 0));
         if (this.delayGain && this.audioContext) {
             this.delayGain.gain.setTargetAtTime(
-                this.delayAmount * 0.55,
+                this.delayAmount * 1.0,
                 this.audioContext.currentTime,
                 0.025
             );
@@ -92,7 +92,7 @@ export class AudioEngine {
         this.echoAmount = Math.max(0, Math.min(1, Number(value) || 0));
         if (this.echoGain && this.audioContext) {
             this.echoGain.gain.setTargetAtTime(
-                this.echoAmount * 0.48,
+                this.echoAmount * 0.9,
                 this.audioContext.currentTime,
                 0.025
             );
@@ -188,7 +188,7 @@ export class AudioEngine {
         this.delayGain = context.createGain();
 
         this.delayNode.delayTime.value = 0.24;
-        this.delayFeedback.gain.value = 0.28;
+        this.delayFeedback.gain.value = 0.42;
         this.delayGain.gain.value = 0;
 
         this.delayInput.connect(this.delayNode);
@@ -203,7 +203,7 @@ export class AudioEngine {
         this.echoGain = context.createGain();
 
         this.echoNode.delayTime.value = 0.52;
-        this.echoFeedback.gain.value = 0.34;
+        this.echoFeedback.gain.value = 0.5;
         this.echoGain.gain.value = 0;
 
         this.echoInput.connect(this.echoNode);
