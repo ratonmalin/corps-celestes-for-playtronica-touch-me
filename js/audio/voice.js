@@ -109,10 +109,8 @@ export class Voice {
             now
         );
 
-        this.lfo.connect(this.lfoGain);
-        this.lfoGain.connect(this.oscillatorA.detune);
-        this.lfoGain.connect(this.oscillatorB.detune);
-        this.lfoGain.connect(this.oscillatorC.detune);
+        // No pitch modulation while a note is held.
+        // Stable pitch is essential for the shared scale to remain consonant.
 
         this.gain = context.createGain();
 
@@ -182,11 +180,7 @@ export class Voice {
             proximity * 180 +
             systemLevel * 80;
 
-        const pitchDepth =
-            0.35 +
-            this.velocity * 0.35 +
-            proximity * 0.35 +
-            systemLevel * 0.12;
+        const pitchDepth = 0;
 
         const upperLayer =
             0.20 +
@@ -218,7 +212,7 @@ export class Voice {
         this.lfoGain?.gain.setTargetAtTime(
             pitchDepth,
             now,
-            1.8
+            0.08
         );
 
         this.oscillatorCGain?.gain.setTargetAtTime(
@@ -233,15 +227,10 @@ export class Voice {
             2.2
         );
 
-        const internalDetune =
-            -4 +
-            systemLevel * 0.7 +
-            proximity * 1.2;
-
         this.oscillatorB?.detune.setTargetAtTime(
-            internalDetune,
+            -4,
             now,
-            1.8
+            0.08
         );
     }
 
