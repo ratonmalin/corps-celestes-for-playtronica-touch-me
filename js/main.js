@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-15";
+import { AudioEngine } from "./audio/audio.js?v=20261002-16";
 import { VisualEngine } from "./visuals/visual-engine.js";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -18,7 +18,8 @@ const ui = {
     volumeOut: $("volume-out"),
     scale: $("scale"),
     effects: [...document.querySelectorAll(".effect-slider")],
-    instrument: $("instrument")
+    instrument: $("instrument"),
+    arpeggiator: $("arpeggiator")
 };
 
 const eventBus = new EventBus();
@@ -58,6 +59,11 @@ function setInstrument(value) {
     audio.setInstrument(value);
 }
 
+function setArpeggiator(enabled) {
+    audio.setArpeggiator(enabled);
+    ui.arpeggiator.textContent = enabled ? "ARPÉGIATEUR · ON" : "ARPÉGIATEUR · OFF";
+}
+
 function setEffect(type, value, output) {
     const normalized = clamp(Number(value));
     output.textContent = Math.round(normalized * 100) + "%";
@@ -69,6 +75,11 @@ function setEffect(type, value, output) {
 
 ui.instrument.addEventListener("change", () => {
     setInstrument(ui.instrument.value);
+setArpeggiator(false);
+
+ui.arpeggiator.addEventListener("click", () => {
+    setArpeggiator(!audio.arpeggiatorEnabled);
+});
 });
 
 setInstrument(ui.instrument.value);
