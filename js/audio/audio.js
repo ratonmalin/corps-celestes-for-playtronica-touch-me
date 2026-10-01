@@ -1,5 +1,5 @@
 const VERSION =
-    new URL(import.meta.url).searchParams.get("v") || "unknown";
+    new URL(import.meta.url).searchParams.get("v") || "runtime-" + Date.now();
 
 console.log("[AUDIO ENGINE] Loaded version:", VERSION);
 
