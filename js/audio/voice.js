@@ -104,7 +104,7 @@ export class Voice {
 
         this.oscillatorB.detune
             .setValueAtTime(
-                this.instrument === "strings" ? -7 : 5,
+                this.instrument === "strings" ? -11 : 5,
                 now
             );
 
@@ -133,7 +133,7 @@ export class Voice {
 
         this.oscillatorC.detune
             .setValueAtTime(
-                this.instrument === "strings" ? 7
+                this.instrument === "strings" ? 9
                     : this.instrument === "harp" ? -3
                     : -4,
                 now
@@ -154,9 +154,9 @@ export class Voice {
 
         const mix =
             this.instrument === "strings"
-                ? [0.52, 0.34, 0.14]
+                ? [0.48, 0.38, 0.14]
                 : this.instrument === "harp"
-                    ? [0.68, 0.22, 0.10]
+                    ? [0.62, 0.24, 0.14]
                     : [0.72, 0.24, 0.08];
 
         this.oscillatorAGain.gain.setValueAtTime(mix[0], now);
@@ -179,14 +179,14 @@ export class Voice {
 
         const filterBase =
             this.instrument === "strings"
-                ? 1100 + ((this.note - 24) / 36) * 1300
+                ? 950 + ((this.note - 24) / 36) * 1050
                 : this.instrument === "harp"
-                    ? 1800 + ((this.note - 24) / 36) * 1400
+                    ? 1500 + ((this.note - 24) / 36) * 1200
                     : 850 + ((this.note - 48) / 31) * 1050;
 
         this.filter.frequency
             .setValueAtTime(
-                Math.max(700, Math.min(1900, filterBase)),
+                Math.max(650, Math.min(this.instrument === "harp" ? 2700 : 1900, filterBase)),
                 now
             );
 
@@ -217,7 +217,11 @@ export class Voice {
 
         this.filterLfoGain.gain
             .setValueAtTime(
-                280,
+                this.instrument === "strings"
+                    ? 180
+                    : this.instrument === "harp"
+                        ? 90
+                        : 280,
                 now
             );
 
@@ -250,7 +254,11 @@ export class Voice {
 
         this.lfoGain.gain
             .setValueAtTime(
-                1.2 + this.velocity * 0.8,
+                this.instrument === "strings"
+                    ? 0.8 + this.velocity * 0.7
+                    : this.instrument === "harp"
+                        ? 0.35
+                        : 1.2 + this.velocity * 0.8,
                 now
             );
 
@@ -279,7 +287,7 @@ export class Voice {
             context.createGain();
 
         const peakGain =
-            (this.instrument === "harp" ? 0.11 : 0.095) * this.velocity;
+            (this.instrument === "harp" ? 0.12 : 0.095) * this.velocity;
 
         this.gain.gain
             .setValueAtTime(
@@ -293,8 +301,8 @@ export class Voice {
          */
 
         const attack =
-            this.instrument === "strings" ? 0.32
-                : this.instrument === "harp" ? 0.012
+            this.instrument === "strings" ? 0.48
+                : this.instrument === "harp" ? 0.004
                 : 0.07;
 
         this.gain.gain
@@ -306,6 +314,24 @@ export class Voice {
                 now + attack
             );
 
+        if (this.instrument === "harp") {
+            this.oscillatorA.frequency.setValueAtTime(frequency * 1.018, now);
+            this.oscillatorA.frequency.exponentialRampToValueAtTime(
+                frequency,
+                now + 0.055
+            );
+            this.oscillatorB.frequency.setValueAtTime(frequency * 1.012, now);
+            this.oscillatorB.frequency.exponentialRampToValueAtTime(
+                frequency,
+                now + 0.04
+            );
+            this.oscillatorC.frequency.setValueAtTime(frequency * 2.008, now);
+            this.oscillatorC.frequency.exponentialRampToValueAtTime(
+                frequency * 2,
+                now + 0.035
+            );
+        }
+
 
         /*
          * POSITION STÉRÉO
@@ -315,7 +341,9 @@ export class Voice {
             context.createStereoPanner();
 
         const pan =
-            ((this.note - 24) / 36) * 0.5 - 0.25;
+            this.instrument === "strings"
+                ? ((this.note - 24) / 36) * 0.38 - 0.19
+                : ((this.note - 24) / 36) * 0.5 - 0.25;
 
         this.panner.pan
             .setValueAtTime(
@@ -333,8 +361,8 @@ export class Voice {
 
         this.reverbSend.gain
             .setValueAtTime(
-                this.instrument === "strings" ? 1.35
-                    : this.instrument === "harp" ? 1.45
+                this.instrument === "strings" ? 1.55
+                    : this.instrument === "harp" ? 1.7
                     : 1.15,
                 now
             );
