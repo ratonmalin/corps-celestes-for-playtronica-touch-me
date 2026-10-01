@@ -38,9 +38,13 @@ export class AudioEngine {
         this.arpeggiatorEnabled = false;
         this.arpeggiatorNotes = new Map();
         this.arpeggiatorTimer = null;
+        this.arpeggiatorScheduler = null;
+        this.arpeggiatorNextTime = 0;
         this.arpeggiatorIndex = 0;
         this.arpeggiatorCurrentId = null;
         this.arpeggiatorStepMs = 680;
+        this.arpeggiatorLookaheadMs = 25;
+        this.arpeggiatorScheduleAhead = 0.12;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
@@ -74,6 +78,10 @@ export class AudioEngine {
                 clearInterval(this.arpeggiatorTimer);
                 this.arpeggiatorTimer = null;
             }
+            if (this.arpeggiatorScheduler !== null) {
+                clearInterval(this.arpeggiatorScheduler);
+                this.arpeggiatorScheduler = null;
+            }
             if (this.arpeggiatorCurrentId) {
                 const voice = this.activeVoices.get(this.arpeggiatorCurrentId);
                 if (voice) {
@@ -100,8 +108,24 @@ export class AudioEngine {
     startArpeggiator() {
         if (!this.arpeggiatorEnabled || this.arpeggiatorTimer !== null) return;
         if (this.arpeggiatorNotes.size === 0) return;
-        this.arpeggiatorStep();
-        this.arpeggiatorTimer = window.setInterval(() => this.arpeggiatorStep(), this.arpeggiatorStepMs);
+        this.arpeggiatorNextTime = this.audioContext?.currentTime ?? 0;
+        this.scheduleArpeggiator();
+        this.arpeggiatorScheduler = window.setInterval(
+            () => this.scheduleArpeggiator(),
+            this.arpeggiatorLookaheadMs
+        );
+    }
+
+    scheduleArpeggiator() {
+        if (!this.arpeggiatorEnabled || this.arpeggiatorNotes.size === 0 || !this.audioContext) {
+            return;
+        }
+
+        const now = this.audioContext.currentTime;
+        while (this.arpeggiatorNextTime < now + this.arpeggiatorScheduleAhead) {
+            this.arpeggiatorStep();
+            this.arpeggiatorNextTime += this.arpeggiatorStepMs / 1000;
+        }
     }
 
     arpeggiatorStep() {
