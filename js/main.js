@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-14";
+import { AudioEngine } from "./audio/audio.js?v=20261002-15";
 import { VisualEngine } from "./visuals/visual-engine.js";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -17,7 +17,8 @@ const ui = {
     volume: $("volume"),
     volumeOut: $("volume-out"),
     scale: $("scale"),
-    effects: [...document.querySelectorAll(".effect-slider")]
+    effects: [...document.querySelectorAll(".effect-slider")],
+    instrument: $("instrument")
 };
 
 const eventBus = new EventBus();
@@ -53,6 +54,10 @@ function renderSignal(note = null) {
     ui.led.classList.toggle("on", connected || intensity > 0.01);
 }
 
+function setInstrument(value) {
+    audio.setInstrument(value);
+}
+
 function setEffect(type, value, output) {
     const normalized = clamp(Number(value));
     output.textContent = Math.round(normalized * 100) + "%";
@@ -61,6 +66,12 @@ function setEffect(type, value, output) {
     if (type === "delay") audio.setDelay(normalized);
     if (type === "echo") audio.setEcho(normalized);
 }
+
+ui.instrument.addEventListener("change", () => {
+    setInstrument(ui.instrument.value);
+});
+
+setInstrument(ui.instrument.value);
 
 for (const slider of ui.effects) {
     const type = slider.dataset.effect;
