@@ -19,7 +19,6 @@ const ui = {
     scale: $("scale")
 };
 
-
 const eventBus = new EventBus();
 const audio = new AudioEngine(eventBus);
 const visuals = new VisualEngine(eventBus);
@@ -87,9 +86,13 @@ ui.sensitivity.addEventListener("input", () => {
 });
 
 ui.scale.addEventListener("change", () => {
+    const index = Number(ui.scale.value);
+
+    midi?.setScale(index);
+
     eventBus.emit({
         type: "scalechange",
-        index: Number(ui.scale.value)
+        index
     });
 });
 
@@ -137,7 +140,6 @@ async function boot() {
 
     setStatus("INITIALISATION");
 
-    // Browser autoplay policies may reject this call. MIDI must not depend on it.
     audio.start().catch(error => {
         console.info("[AUDIO] En attente d'un geste utilisateur.", error);
     });
@@ -164,6 +166,8 @@ async function boot() {
     });
 
     midi.setSensitivity(sensitivity);
+    midi.setScale(Number(ui.scale.value) || 0);
+
     await midi.start();
 
     const retry = () => {
