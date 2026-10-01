@@ -6,7 +6,7 @@ export class Voice {
         reverbInput,
         delayInput,
         echoInput,
-        { note, velocity }
+        { note, velocity, chord = false, chordIntervals = [0, 4, 7] }
     ) {
         this.audioContext = audioContext;
         this.destination = destination;
@@ -14,9 +14,14 @@ export class Voice {
         this.delayInput = delayInput;
         this.echoInput = echoInput;
 
+        this.baseNote = note;
         this.note = note;
         this.velocity = velocity;
         this.instrument = "synth";
+        this.chord = Boolean(chord);
+        this.chordIntervals = Array.isArray(chordIntervals) && chordIntervals.length === 3
+            ? chordIntervals
+            : [0, 4, 7];
 
         this.oscillatorA = null;
         this.oscillatorB = null;
@@ -50,6 +55,11 @@ export class Voice {
     setInstrument(instrument) {
         const allowed = ["synth", "strings", "harp"];
         this.instrument = allowed.includes(instrument) ? instrument : "synth";
+
+        // The harp lives one octave above the common TouchMe register.
+        this.note = this.instrument === "harp"
+            ? this.baseNote + 12
+            : this.baseNote;
     }
 
     start() {
@@ -64,8 +74,11 @@ export class Voice {
                 (this.note - 69) / 12
             );
 
-        const chordFrequencies = this.instrument === "strings"
-            ? [frequency, frequency * Math.pow(2, 4 / 12), frequency * Math.pow(2, 7 / 12)]
+        const useChord = this.chord || this.instrument === "strings";
+        const chordFrequencies = useChord
+            ? this.chordIntervals.map(interval =>
+                frequency * Math.pow(2, interval / 12)
+            )
             : [frequency, frequency, frequency];
 
 
@@ -130,7 +143,7 @@ export class Voice {
 
         this.oscillatorC.frequency
             .setValueAtTime(
-                this.instrument === "strings"
+                useChord
                     ? chordFrequencies[2]
                     : frequency * 2,
                 now
@@ -186,7 +199,7 @@ export class Voice {
             this.instrument === "strings"
                 ? 950 + ((this.note - 24) / 36) * 1050
                 : this.instrument === "harp"
-                    ? 1500 + ((this.note - 24) / 36) * 1200
+                    ? 1800 + ((this.note - 36) / 36) * 1000
                     : 850 + ((this.note - 48) / 31) * 1050;
 
         this.filter.frequency
@@ -350,7 +363,9 @@ export class Voice {
         const pan =
             this.instrument === "strings"
                 ? ((this.note - 24) / 36) * 0.38 - 0.19
-                : ((this.note - 24) / 36) * 0.5 - 0.25;
+                : this.instrument === "harp"
+                    ? ((this.note - 36) / 36) * 0.42 - 0.21
+                    : ((this.note - 24) / 36) * 0.5 - 0.25;
 
         this.panner.pan
             .setValueAtTime(
@@ -464,11 +479,17 @@ export class Voice {
             proximity * 420 +
             systemLevel * 180;
 
+        const pitchBase =
+            this.instrument === "strings"
+                ? 0.8 + this.velocity * 0.7
+                : this.instrument === "harp"
+                    ? 0.35
+                    : 1.2 + this.velocity * 0.8;
+
         const pitchDepth =
-            1.2 +
-            this.velocity * 0.8 +
-            proximity * 1.1 +
-            systemLevel * 0.45;
+            pitchBase +
+            proximity * (this.instrument === "harp" ? 0.25 : 1.1) +
+            systemLevel * (this.instrument === "harp" ? 0.08 : 0.45);
 
         const upperLayer =
             0.08 +
@@ -516,9 +537,9 @@ export class Voice {
         );
 
         const internalDetune =
-            5 +
-            systemLevel * 2.2 +
-            proximity * 3.5;
+            this.instrument === "strings"
+                ? -11 + systemLevel * 0.7 + proximity * 0.8
+                : 5 + systemLevel * 2.2 + proximity * 3.5;
 
         this.oscillatorB?.detune.setTargetAtTime(
             internalDetune,
