@@ -318,6 +318,7 @@ export class AudioEngine {
                         }
                     }
                 }
+                if (this.arpeggiatorEnabled) this.startArpeggiator();
             }).catch(error => {
                 console.warn("[AUDIO] Waiting for user interaction:", error);
             });
