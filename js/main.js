@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-07";
+import { AudioEngine } from "./audio/audio.js?v=20261002-08";
 import { VisualEngine } from "./visuals/visual-engine.js";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -16,7 +16,8 @@ const ui = {
     sensOut: $("sens-out"),
     volume: $("volume"),
     volumeOut: $("volume-out"),
-    scale: $("scale")
+    scale: $("scale"),
+    knobs: [...document.querySelectorAll(".effect-knob")]
 };
 
 const eventBus = new EventBus();
@@ -48,18 +49,57 @@ function renderSignal(note = null) {
             ? "090"
             : String(Math.round(midi.lastControllerValue)).padStart(3, "0");
 
-    if (frequency > 0) {
-        ui.freq.textContent = Math.round(frequency) + " Hz";
-    }
-
+    if (frequency > 0) ui.freq.textContent = Math.round(frequency) + " Hz";
     ui.led.classList.toggle("on", connected || intensity > 0.01);
+}
+
+function updateKnob(knob, value) {
+    const normalized = clamp(value);
+    const circle = knob.querySelector(".effect-arc");
+    if (!circle) return;
+
+    const circumference = 2 * Math.PI * 15;
+    const arcLength = circumference * 0.75;
+    circle.style.strokeDasharray = `${arcLength * normalized} ${circumference}`;
+    circle.style.strokeDashoffset = "0";
+}
+
+function setEffectFromPointer(knob, event) {
+    const rect = knob.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const angle = Math.atan2(event.clientY - cy, event.clientX - cx) * 180 / Math.PI;
+    let normalized = (angle + 135) / 270;
+    normalized = clamp(normalized);
+    const type = knob.dataset.effect;
+    knob.dataset.value = normalized.toFixed(3);
+    updateKnob(knob, normalized);
+
+    if (type === "reverb") audio.setReverb(normalized);
+    if (type === "delay") audio.setDelay(normalized);
+    if (type === "echo") audio.setEcho(normalized);
+}
+
+for (const knob of ui.knobs) {
+    const initial = Number(knob.dataset.value) || 0;
+    updateKnob(knob, initial);
+
+    knob.addEventListener("pointerdown", event => {
+        knob.setPointerCapture(event.pointerId);
+        setEffectFromPointer(knob, event);
+    });
+
+    knob.addEventListener("pointermove", event => {
+        if (knob.hasPointerCapture(event.pointerId)) {
+            setEffectFromPointer(knob, event);
+        }
+    });
 }
 
 ui.fullscreen.addEventListener("click", async () => {
     try {
-        if (document.fullscreenElement) {
-            await document.exitFullscreen();
-        } else {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else {
             await audio.start();
             await document.documentElement.requestFullscreen();
         }
@@ -70,8 +110,7 @@ ui.fullscreen.addEventListener("click", async () => {
 });
 
 document.addEventListener("fullscreenchange", () => {
-    ui.fullscreen.textContent =
-        document.fullscreenElement ? "QUITTER" : "FULL SCREEN";
+    ui.fullscreen.textContent = document.fullscreenElement ? "QUITTER" : "FULL SCREEN";
 });
 
 ui.volume.addEventListener("input", () => {
@@ -87,27 +126,16 @@ ui.sensitivity.addEventListener("input", () => {
 });
 
 ui.scale.addEventListener("change", async () => {
-    try {
-        await audio.start();
-    } catch (error) {
-        console.info("[AUDIO] En attente d'un geste utilisateur.", error);
-    }
+    try { await audio.start(); }
+    catch (error) { console.info("[AUDIO] En attente d'un geste utilisateur.", error); }
 
     const index = Number(ui.scale.value);
-
     midi?.setScale(index);
-
-    eventBus.emit({
-        type: "scalechange",
-        index
-    });
+    eventBus.emit({ type: "scalechange", index });
 });
 
 eventBus.on("noteon", event => {
-    const value = Number.isFinite(event.touchIntensity)
-        ? event.touchIntensity
-        : event.velocity;
-
+    const value = Number.isFinite(event.touchIntensity) ? event.touchIntensity : event.velocity;
     intensity = clamp(value);
     renderSignal(event.note);
 });
@@ -119,18 +147,13 @@ eventBus.on("noteoff", () => {
 
 function decay() {
     intensity *= 0.985;
-
-    if (intensity < 0.002) {
-        intensity = 0;
-    }
-
+    if (intensity < 0.002) intensity = 0;
     renderSignal();
     requestAnimationFrame(decay);
 }
 
 function resetVolume() {
     const value = 0.5;
-
     ui.volume.value = String(value);
     ui.volumeOut.textContent = "50%";
     audio.setVolume(value);
@@ -140,30 +163,25 @@ window.addEventListener("pageshow", resetVolume);
 
 async function boot() {
     resetVolume();
-
     const sensitivity = Number(ui.sensitivity.value) || 1;
     ui.sensOut.textContent = sensitivity.toFixed(1) + "×";
 
     visuals.start();
     decay();
-
     setStatus("INITIALISATION");
 
     midi = new TouchMeMidiInput(eventBus, event => {
         if (event.type === "connected") {
             connected = true;
-            ui.device.textContent =
-                String(event.device || "TOUCHME").toUpperCase();
+            ui.device.textContent = String(event.device || "TOUCHME").toUpperCase();
             setStatus("CAPTEUR CONNECTÉ · EN ATTENTE");
             renderSignal();
             return;
         }
-
         if (event.type === "status") {
             if (!connected) setStatus(event.status);
             return;
         }
-
         if (event.type === "intensity" || event.type === "note") {
             intensity = clamp(event.value);
             renderSignal(event.note);
@@ -172,7 +190,6 @@ async function boot() {
 
     midi.setSensitivity(sensitivity);
     midi.setScale(Number(ui.scale.value) || 0);
-
     await midi.start();
 
     const retry = () => {
@@ -181,7 +198,6 @@ async function boot() {
             window.setTimeout(retry, 1000);
         }
     };
-
     retry();
 }
 
