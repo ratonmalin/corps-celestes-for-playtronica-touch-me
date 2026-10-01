@@ -81,7 +81,7 @@ export class AudioEngine {
         this.delayAmount = Math.max(0, Math.min(1, Number(value) || 0));
         if (this.delayGain && this.audioContext) {
             this.delayGain.gain.setTargetAtTime(
-                this.delayAmount * 0.28,
+                this.delayAmount * 0.55,
                 this.audioContext.currentTime,
                 0.025
             );
@@ -92,7 +92,7 @@ export class AudioEngine {
         this.echoAmount = Math.max(0, Math.min(1, Number(value) || 0));
         if (this.echoGain && this.audioContext) {
             this.echoGain.gain.setTargetAtTime(
-                this.echoAmount * 0.24,
+                this.echoAmount * 0.48,
                 this.audioContext.currentTime,
                 0.025
             );
