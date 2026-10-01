@@ -28,16 +28,21 @@ export class AudioEngine {
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
 
+        // Web Audio must be unlocked from an actual browser gesture.
+        // Listen to several gesture types because touch browsers differ.
         document.addEventListener("pointerdown", this.handleUserGesture, {
-            passive: true,
             capture: true
         });
         document.addEventListener("touchstart", this.handleUserGesture, {
-            passive: true,
+            capture: true
+        });
+        document.addEventListener("mousedown", this.handleUserGesture, {
+            capture: true
+        });
+        document.addEventListener("click", this.handleUserGesture, {
             capture: true
         });
         document.addEventListener("keydown", this.handleUserGesture, {
-            passive: true,
             capture: true
         });
 
@@ -68,10 +73,16 @@ export class AudioEngine {
     }
 
     async handleUserGesture() {
-        if (this.started) return;
+        if (
+            this.started &&
+            this.audioContext?.state === "running"
+        ) {
+            return;
+        }
 
         try {
             await this.start();
+            console.log("[AUDIO] Unlocked:", this.audioContext?.state);
         } catch (error) {
             console.warn("[AUDIO] User gesture could not unlock audio:", error);
         }
@@ -115,7 +126,7 @@ export class AudioEngine {
                 this.compressor.connect(this.audioContext.destination);
             }
 
-            if (this.audioContext.state === "suspended") {
+            if (this.audioContext.state !== "running") {
                 await this.audioContext.resume();
             }
 
@@ -126,6 +137,11 @@ export class AudioEngine {
             }
 
             this.started = true;
+
+            console.log(
+                "[AUDIO] Context running:",
+                this.audioContext.state
+            );
         })();
 
         try {
@@ -270,7 +286,14 @@ export class AudioEngine {
         );
 
         this.activeVoices.set(voiceId, voice);
-        voice.start();
+        try {
+            voice.start();
+        } catch (error) {
+            this.activeVoices.delete(voiceId);
+            console.error("[AUDIO] Voice start failed:", error);
+            return;
+        }
+
         this.updateSystemState();
     }
 
