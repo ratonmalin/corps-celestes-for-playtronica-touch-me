@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Corps Célestes · instrument musical expérimental pour Playtronica TouchMe.">
     <title>Corps Célestes</title>
-    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/style.css?v=4">
 </head>
 <body>
     <main class="app">
         <header class="header">
-            <div>
+            <div class="header-info">
                 <h1>Corps Célestes</h1>
                 <p>Playtronica TouchMe · Camille Grigaut</p>
             </div>
@@ -17,19 +18,19 @@
             <div class="header-actions">
                 <button id="connect" class="text-button" type="button">TOUCHME</button>
                 <button id="audio" class="text-button" type="button">AUDIO</button>
-                <button id="fullscreen" class="text-button" type="button">PLEIN ÉCRAN</button>
-                <select id="scale" class="scale-control" aria-label="Gamme">
+                <select id="scale" class="scale-control" aria-label="Changer de gamme">
                     <option value="0">GAMME · MAJEURE</option>
                     <option value="1">GAMME · DORIENNE</option>
                     <option value="2">GAMME · CHROMATIQUE</option>
                 </select>
+                <button id="fullscreen" class="text-button" type="button">FULL SCREEN</button>
             </div>
         </header>
 
-        <div class="info">
+        <div class="status-bar">
             <span id="led" class="led"></span>
             <span id="status">EN ATTENTE</span>
-            <span>/</span>
+            <span class="separator">/</span>
             <span id="device">AUCUN APPAREIL</span>
         </div>
 
@@ -49,6 +50,6 @@
         <span id="freq-meter" class="proxy" aria-hidden="true"></span>
     </main>
 
-    <script type="module" src="./js/main.js"></script>
+    <script type="module" src="./js/main.js?v=4"></script>
 </body>
 </html>
