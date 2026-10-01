@@ -34,6 +34,7 @@ export class AudioEngine {
         this.reverbAmount = 2;
         this.delayAmount = 0;
         this.echoAmount = 0;
+        this.instrument = "synth";
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
@@ -51,6 +52,11 @@ export class AudioEngine {
 
         window.addEventListener("blur", this.handleWindowBlur);
         document.addEventListener("visibilitychange", this.handleVisibilityChange);
+    }
+
+    setInstrument(value) {
+        const allowed = ["synth", "strings", "harp"];
+        this.instrument = allowed.includes(value) ? value : "synth";
     }
 
     setVolume(value) {
@@ -272,6 +278,8 @@ export class AudioEngine {
             this.echoInput,
             { note: audioNote, velocity }
         );
+
+        voice.setInstrument(this.instrument);
 
         this.activeVoices.set(voiceId, voice);
         voice.start();
