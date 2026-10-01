@@ -108,8 +108,8 @@ export class AudioEngine {
 
         this.reverbInput = context.createGain();
 
-        const duration = 2.8;
-        const decay = 5.5;
+        const duration = 7.5;
+        const decay = 3.2;
         const sampleRate = context.sampleRate;
         const length = Math.floor(sampleRate * duration);
 
@@ -149,7 +149,7 @@ export class AudioEngine {
             context.createBiquadFilter();
 
         reverbFilter.type = "lowpass";
-        reverbFilter.frequency.value = 2600;
+        reverbFilter.frequency.value = 3400;
         reverbFilter.Q.value = 0.2;
 
         this.reverbInput.connect(this.reverb);
