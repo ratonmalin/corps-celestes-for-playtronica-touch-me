@@ -22,13 +22,24 @@ export class AudioEngine {
         this.pendingNotes = new Map();
         this.maxVoices = 16;
         this.started = false;
+        this.startPromise = null;
         this.volume = 1;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
 
-        document.addEventListener("pointerdown", this.handleUserGesture, { passive: true });
-        document.addEventListener("keydown", this.handleUserGesture, { passive: true });
+        document.addEventListener("pointerdown", this.handleUserGesture, {
+            passive: true,
+            capture: true
+        });
+        document.addEventListener("touchstart", this.handleUserGesture, {
+            passive: true,
+            capture: true
+        });
+        document.addEventListener("keydown", this.handleUserGesture, {
+            passive: true,
+            capture: true
+        });
 
         eventBus.on("noteon", this.handleEvent);
         eventBus.on("noteoff", this.handleEvent);
@@ -67,45 +78,76 @@ export class AudioEngine {
     }
 
     async start() {
-        if (!this.audioContext) {
-            const AudioContext =
-                window.AudioContext ||
-                window.webkitAudioContext;
+        if (this.started && this.audioContext?.state === "running") {
+            return;
+        }
 
-            if (!AudioContext) {
-                throw new Error("Web Audio API indisponible.");
+        if (this.startPromise) {
+            return this.startPromise;
+        }
+
+        this.startPromise = (async () => {
+            if (!this.audioContext) {
+                const AudioContext =
+                    window.AudioContext ||
+                    window.webkitAudioContext;
+
+                if (!AudioContext) {
+                    throw new Error("Web Audio API indisponible.");
+                }
+
+                this.audioContext = new AudioContext();
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.gain.value = this.volume;
+
+                this.compressor =
+                    this.audioContext.createDynamicsCompressor();
+
+                this.compressor.threshold.value = -20;
+                this.compressor.knee.value = 30;
+                this.compressor.ratio.value = 2.2;
+                this.compressor.attack.value = 0.06;
+                this.compressor.release.value = 1.8;
+
+                this.createReverb();
+
+                this.masterGain.connect(this.compressor);
+                this.compressor.connect(this.audioContext.destination);
             }
 
-            this.audioContext = new AudioContext();
-            this.masterGain = this.audioContext.createGain();
-            this.masterGain.gain.value = this.volume;
+            if (this.audioContext.state === "suspended") {
+                await this.audioContext.resume();
+            }
 
-            this.compressor =
-                this.audioContext.createDynamicsCompressor();
+            if (this.audioContext.state !== "running") {
+                throw new Error(
+                    `AudioContext state: ${this.audioContext.state}`
+                );
+            }
 
-            this.compressor.threshold.value = -20;
-            this.compressor.knee.value = 30;
-            this.compressor.ratio.value = 2.2;
-            this.compressor.attack.value = 0.06;
-            this.compressor.release.value = 1.8;
+            this.started = true;
+        })();
 
-            this.createReverb();
-
-            this.masterGain.connect(this.compressor);
-            this.compressor.connect(this.audioContext.destination);
+        try {
+            await this.startPromise;
+        } finally {
+            this.startPromise = null;
         }
 
-        if (this.audioContext.state === "suspended") {
-            await this.audioContext.resume();
-        }
+        this.flushPendingNotes();
+    }
 
-        if (this.audioContext.state !== "running") {
-            throw new Error(
-                `AudioContext state: ${this.audioContext.state}`
-            );
-        }
+    flushPendingNotes() {
+        if (!this.started) return;
 
-        this.started = true;
+        const pending = [...this.pendingNotes.entries()];
+        this.pendingNotes.clear();
+
+        for (const [, event] of pending) {
+            if (event.type === "noteon") {
+                this.noteOn(event);
+            }
+        }
     }
 
     createReverb() {
@@ -171,17 +213,10 @@ export class AudioEngine {
             }
 
             this.start()
-                .then(() => {
-                    for (const [key, pendingEvent] of this.pendingNotes) {
-                        this.pendingNotes.delete(key);
-                        if (pendingEvent.type === "noteon") {
-                            this.noteOn(pendingEvent);
-                        }
-                    }
-                })
                 .catch(error => {
-                    console.warn("[AUDIO] Waiting for user interaction:", error);
-                    this.pendingNotes.clear();
+                    // Autoplay restrictions are expected until a real user
+                    // gesture occurs. Keep the note queued for that gesture.
+                    console.info("[AUDIO] Waiting for user interaction:", error);
                 });
 
             return;
