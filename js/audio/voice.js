@@ -16,10 +16,12 @@ export class Voice {
         this.oscillatorA = null;
         this.oscillatorB = null;
         this.oscillatorC = null;
+        this.oscillatorD = null;
 
         this.oscillatorAGain = null;
         this.oscillatorBGain = null;
         this.oscillatorCGain = null;
+        this.oscillatorDGain = null;
 
         this.filter = null;
         this.gain = null;
@@ -36,6 +38,7 @@ export class Voice {
         this.releaseTimer = null;
         this.startedAt = null;
         this.maxHoldTimer = null;
+        this.holdBloomTimer = null;
 
         this.systemCount = 1;
         this.nearestDistance = null;
@@ -82,7 +85,7 @@ export class Voice {
 
         this.oscillatorB.frequency
             .setValueAtTime(
-                frequency,
+                frequency * 1.5,
                 now
             );
 
@@ -129,14 +132,22 @@ export class Voice {
         this.oscillatorAGain = context.createGain();
         this.oscillatorBGain = context.createGain();
         this.oscillatorCGain = context.createGain();
+        this.oscillatorDGain = context.createGain();
 
         this.oscillatorAGain.gain.setValueAtTime(0.72, now);
         this.oscillatorBGain.gain.setValueAtTime(0.24, now);
-        this.oscillatorCGain.gain.setValueAtTime(0.08, now);
+        this.oscillatorCGain.gain.setValueAtTime(0.035, now);
+        this.oscillatorDGain.gain.setValueAtTime(0.0001, now);
 
         this.oscillatorA.connect(this.oscillatorAGain);
         this.oscillatorB.connect(this.oscillatorBGain);
         this.oscillatorC.connect(this.oscillatorCGain);
+
+        // Sub-octave used only by the long-hold bloom.
+        this.oscillatorD = context.createOscillator();
+        this.oscillatorD.type = "sine";
+        this.oscillatorD.frequency.setValueAtTime(frequency / 2, now);
+        this.oscillatorD.connect(this.oscillatorDGain);
 
 
         /*
@@ -149,12 +160,12 @@ export class Voice {
         this.filter.type = "lowpass";
 
         const filterBase =
-            850 +
-            ((this.note - 48) / 31) * 1050;
+            720 +
+            ((this.note - 48) / 31) * 620;
 
         this.filter.frequency
             .setValueAtTime(
-                Math.max(700, Math.min(1900, filterBase)),
+                Math.max(650, Math.min(1400, filterBase)),
                 now
             );
 
@@ -185,7 +196,7 @@ export class Voice {
 
         this.filterLfoGain.gain
             .setValueAtTime(
-                280,
+                150,
                 now
             );
 
@@ -247,7 +258,7 @@ export class Voice {
             context.createGain();
 
         const peakGain =
-            0.095 * this.velocity;
+            0.085 * this.velocity;
 
         this.gain.gain
             .setValueAtTime(
@@ -346,6 +357,20 @@ export class Voice {
 
         this.lfo.start(now);
         this.filterLfo.start(now);
+        this.oscillatorD.start(now);
+
+        // Long holds unlock a second acoustic state: a quiet sub-octave,
+        // stronger fifth and widening spectral space. It arrives slowly,
+        // so the effect feels discovered rather than triggered.
+        this.holdBloomTimer = window.setTimeout(() => {
+            if (this.isReleased || !this.audioContext) return;
+            const bloomNow = this.audioContext.currentTime;
+            this.oscillatorDGain?.gain.setTargetAtTime(0.075 * this.velocity, bloomNow, 2.4);
+            this.oscillatorBGain?.gain.setTargetAtTime(0.31, bloomNow, 2.8);
+            this.oscillatorCGain?.gain.setTargetAtTime(0.075, bloomNow, 3.2);
+            this.filter?.frequency.setTargetAtTime(1650, bloomNow, 3.5);
+            this.reverbSend?.gain.setTargetAtTime(1.55, bloomNow, 4.0);
+        }, 3500);
 
         this.oscillatorA.start(now);
         this.oscillatorB.start(now);
@@ -532,6 +557,10 @@ export class Voice {
             now + releaseTime + 0.1
         );
 
+        this.oscillatorD.stop(
+            now + releaseTime + 0.1
+        );
+
         this.lfo.stop(
             now + releaseTime + 0.1
         );
@@ -544,6 +573,11 @@ export class Voice {
         if (this.maxHoldTimer !== null) {
             clearTimeout(this.maxHoldTimer);
             this.maxHoldTimer = null;
+        }
+
+        if (this.holdBloomTimer !== null) {
+            clearTimeout(this.holdBloomTimer);
+            this.holdBloomTimer = null;
         }
 
         this.releaseTimer =
@@ -593,6 +627,14 @@ export class Voice {
         } catch {}
 
         try {
+            this.oscillatorD?.disconnect();
+        } catch {}
+
+        try {
+            this.oscillatorDGain?.disconnect();
+        } catch {}
+
+        try {
             this.filter?.disconnect();
         } catch {}
 
@@ -628,10 +670,12 @@ export class Voice {
         this.oscillatorA = null;
         this.oscillatorB = null;
         this.oscillatorC = null;
+        this.oscillatorD = null;
 
         this.oscillatorAGain = null;
         this.oscillatorBGain = null;
         this.oscillatorCGain = null;
+        this.oscillatorDGain = null;
 
         this.filter = null;
         this.gain = null;
