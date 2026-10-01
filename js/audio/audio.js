@@ -308,7 +308,15 @@ export class AudioEngine {
             this.start().then(() => {
                 for (const [key, pendingEvent] of this.pendingNotes) {
                     this.pendingNotes.delete(key);
-                    if (pendingEvent.type === "noteon") this.noteOn(pendingEvent);
+                    if (pendingEvent.type === "noteon") {
+                        if (this.arpeggiatorEnabled) {
+                            const key = pendingEvent.source + "-" + pendingEvent.channel + "-" +
+                                (Number.isFinite(pendingEvent.rawNote) ? pendingEvent.rawNote : pendingEvent.note);
+                            this.arpeggiatorNotes.set(key, pendingEvent);
+                        } else {
+                            this.noteOn(pendingEvent);
+                        }
+                    }
                 }
             }).catch(error => {
                 console.warn("[AUDIO] Waiting for user interaction:", error);
