@@ -147,6 +147,13 @@ export class TouchMeMidiInput {
             const mappedNote =
                 quantizeTouchMeNote(data1, this.scaleIndex);
 
+            const chordIntervals =
+                this.scaleIndex === 1
+                    ? [0, 3, 7]
+                    : this.scaleIndex === 2
+                        ? [0, 5, 7]
+                        : [0, 4, 7];
+
             const raw = this.lastIntensity.get(channel);
             const value = clamp01(
                 (raw ?? data2 / 127) * this.sensitivity
@@ -168,7 +175,8 @@ export class TouchMeMidiInput {
                 channel,
                 source: "touchme",
                 timestamp: performance.now(),
-                touchIntensity: value
+                touchIntensity: value,
+                chordIntervals
             });
 
             this.onSignal?.({
