@@ -1,12 +1,4 @@
-const VERSION =
-    new URL(import.meta.url).searchParams.get("v") || "unknown";
-
-console.log("[AUDIO ENGINE] Loaded version:", VERSION);
-
-const voiceModule =
-    await import(`./voice.js?v=${VERSION}`);
-
-const { Voice } = voiceModule;
+import { Voice } from "./voice.js";
 
 export class AudioEngine {
 
@@ -53,7 +45,6 @@ export class AudioEngine {
             this.handleVisibilityChange
         );
 
-        console.log("[AUDIO ENGINE] Constructor version:", VERSION);
     }
 
     async handleUserGesture() {
@@ -110,7 +101,6 @@ export class AudioEngine {
 
         this.started = true;
 
-        console.log("[AUDIO ENGINE] Running version:", VERSION);
     }
 
     createReverb() {
