@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-09";
+import { AudioEngine } from "./audio/audio.js?v=20261002-10";
 import { VisualEngine } from "./visuals/visual-engine.js";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -62,6 +62,7 @@ function updateKnob(knob, value) {
     const arcLength = circumference * 0.75;
     circle.style.strokeDasharray = `${arcLength * normalized} ${circumference}`;
     circle.style.strokeDashoffset = "0";
+    knob.setAttribute("aria-valuenow", normalized.toFixed(3));
 }
 
 function setEffectFromPointer(knob, event) {
@@ -69,7 +70,9 @@ function setEffectFromPointer(knob, event) {
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     const angle = Math.atan2(event.clientY - cy, event.clientX - cx) * 180 / Math.PI;
-    let normalized = (angle + 135) / 270;
+    let relativeAngle = angle + 135;
+    if (relativeAngle < 0) relativeAngle += 360;
+    let normalized = relativeAngle / 270;
     normalized = clamp(normalized);
     const type = knob.dataset.effect;
     knob.dataset.value = normalized.toFixed(3);
