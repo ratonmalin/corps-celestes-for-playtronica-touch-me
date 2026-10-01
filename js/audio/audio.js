@@ -14,6 +14,7 @@ export class AudioEngine {
         this.pendingNotes = new Map();
         this.maxVoices = 16;
         this.started = false;
+        this.volume = 0.7;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
@@ -47,6 +48,16 @@ export class AudioEngine {
 
     }
 
+    setVolume(value) {
+        this.volume = Math.max(0, Math.min(1, Number(value) || 0));
+
+        if (this.masterGain && this.audioContext) {
+            const now = this.audioContext.currentTime;
+            this.masterGain.gain.cancelScheduledValues(now);
+            this.masterGain.gain.setTargetAtTime(this.volume * 0.6, now, 0.04);
+        }
+    }
+
     async handleUserGesture() {
         if (this.started) return;
 
@@ -72,7 +83,7 @@ export class AudioEngine {
             this.masterGain =
                 this.audioContext.createGain();
 
-            this.masterGain.gain.value = 0.42;
+            this.masterGain.gain.value = this.volume * 0.6;
 
             this.compressor =
                 this.audioContext.createDynamicsCompressor();
