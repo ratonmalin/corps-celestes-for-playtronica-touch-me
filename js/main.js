@@ -5,7 +5,7 @@ import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
 const $ = id => document.getElementById(id);
 const ui = {
-    connect: $("connect"), audio: $("audio"), status: $("status"), device: $("device"),
+    connect: $("connect"), audio: $("audio"), fullscreen: $("fullscreen"), status: $("status"), device: $("device"),
     led: $("led"), level: $("level"), cc: $("cc-value"), ccMeter: $("cc-meter"),
     freq: $("freq"), freqMeter: $("freq-meter"), sensitivity: $("sensitivity"),
     sensOut: $("sens-out"), scale: $("scale"), planet: $("planet")
@@ -74,6 +74,22 @@ async function enableAudio() {
 }
 ui.connect.addEventListener("click", connect);
 ui.audio.addEventListener("click", enableAudio);
+ui.fullscreen.addEventListener("click", async () => {
+    try {
+        if (!document.fullscreenElement) {
+            await document.documentElement.requestFullscreen();
+            ui.fullscreen.textContent = "QUITTER";
+        } else {
+            await document.exitFullscreen();
+        }
+    } catch (error) {
+        ui.status.textContent = "PLEIN ÉCRAN INDISPONIBLE";
+        console.warn("[FULLSCREEN]", error);
+    }
+});
+document.addEventListener("fullscreenchange", () => {
+    ui.fullscreen.textContent = document.fullscreenElement ? "QUITTER" : "PLEIN ÉCRAN";
+});
 ui.sensitivity.addEventListener("input", () => {
     ui.sensOut.textContent = Number(ui.sensitivity.value).toFixed(1) + "×";
     renderSignal();
