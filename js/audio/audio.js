@@ -67,7 +67,7 @@ export class AudioEngine {
     }
 
     setReverb(value) {
-        this.reverbAmount = Math.max(0, Math.min(1, Number(value) || 0));
+        this.reverbAmount = Math.max(0, Math.min(2, (Number(value) || 0) * 2));
         if (this.reverbGain && this.audioContext) {
             this.reverbGain.gain.setTargetAtTime(
                 this.reverbAmount,
