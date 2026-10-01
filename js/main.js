@@ -11,6 +11,8 @@ const ui = {
     volume: $("volume"), volumeOut: $("volume-out"), scale: $("scale")
 };
 
+const VOLUME_STORAGE_KEY = "corps-celestes-volume-v2";
+
 const eventBus = new EventBus();
 const visualEngine = new VisualEngine(eventBus);
 const audioEngine = new AudioEngine(eventBus);
@@ -40,10 +42,7 @@ function renderSignal(note = null) {
         ui.freq.textContent = Math.round(frequency) + " Hz";
     }
 
-    ui.led.classList.toggle(
-        "on",
-        connected || effective > 0.015
-    );
+    ui.led.classList.toggle("on", connected || effective > 0.015);
 }
 
 function handleSignal(event) {
@@ -93,28 +92,17 @@ document.addEventListener("fullscreenchange", () => {
 
 ui.sensitivity.addEventListener("input", () => {
     const value = Number(ui.sensitivity.value);
-
     ui.sensOut.textContent = value.toFixed(1) + "×";
 
-    if (midi) {
-        midi.setSensitivity(value);
-    }
-
+    if (midi) midi.setSensitivity(value);
     renderSignal();
 });
 
 ui.volume.addEventListener("input", () => {
     const value = Number(ui.volume.value);
-
-    ui.volumeOut.textContent =
-        Math.round(value * 100) + "%";
-
+    ui.volumeOut.textContent = Math.round(value * 100) + "%";
     audioEngine.setVolume(value);
-
-    localStorage.setItem(
-        "corps-celestes-volume",
-        String(value)
-    );
+    localStorage.setItem(VOLUME_STORAGE_KEY, String(value));
 });
 
 ui.volume.addEventListener("change", () => {
@@ -155,10 +143,7 @@ function decay() {
     if (lastIntensityAt && now - lastIntensityAt > 120) {
         filteredIntensity *= 0.985;
 
-        if (filteredIntensity < 0.002) {
-            filteredIntensity = 0;
-        }
-
+        if (filteredIntensity < 0.002) filteredIntensity = 0;
         renderSignal();
     }
 
@@ -166,18 +151,14 @@ function decay() {
 }
 
 async function boot() {
-    const savedVolume =
-        Number(localStorage.getItem("corps-celestes-volume"));
+    const savedVolume = Number(localStorage.getItem(VOLUME_STORAGE_KEY));
 
     if (Number.isFinite(savedVolume)) {
         ui.volume.value = String(clamp(savedVolume));
     }
 
     const volume = Number(ui.volume.value);
-
-    ui.volumeOut.textContent =
-        Math.round(volume * 100) + "%";
-
+    ui.volumeOut.textContent = Math.round(volume * 100) + "%";
     audioEngine.setVolume(volume);
 
     const sensitivity = Number(ui.sensitivity.value) || 1;
@@ -199,62 +180,39 @@ async function boot() {
         console.warn("[AUDIO] Autostart impossible:", error);
     });
 
-    midi = new TouchMeMidiInput(
-        eventBus,
-        handleSignal
-    );
-
+    midi = new TouchMeMidiInput(eventBus, handleSignal);
     midi.setSensitivity(sensitivity);
     await midi.start();
 
     const waitForTouchMe = () => {
-        if (!midi?.input) {
-            midi.refreshInput();
-        }
+        if (!midi?.input) midi.refreshInput();
 
         if (midi?.input) {
             connected = true;
-            ui.status.textContent =
-                "CAPTEUR CONNECTÉ · EN ATTENTE";
-
+            ui.status.textContent = "CAPTEUR CONNECTÉ · EN ATTENTE";
             ui.device.textContent =
-                String(
-                    midi.input.name || "TOUCHME"
-                ).toUpperCase();
-
+                String(midi.input.name || "TOUCHME").toUpperCase();
             ui.led.classList.add("on");
             return;
         }
 
-        ui.status.textContent =
-            "RECHERCHE DU TOUCHME";
-
-        window.setTimeout(
-            waitForTouchMe,
-            750
-        );
+        ui.status.textContent = "RECHERCHE DU TOUCHME";
+        window.setTimeout(waitForTouchMe, 750);
     };
 
     waitForTouchMe();
 
-    document.addEventListener(
-        "visibilitychange",
-        () => {
-            if (document.visibilityState === "visible") {
-                audioEngine.resume().catch(() => {});
-                waitForTouchMe();
-            }
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            audioEngine.resume().catch(() => {});
+            waitForTouchMe();
         }
-    );
+    });
 }
 
 boot().catch(error => {
-    ui.status.textContent =
-        "INITIALISATION IMPOSSIBLE";
-
+    ui.status.textContent = "INITIALISATION IMPOSSIBLE";
     console.warn("[TOUCHME]", error);
 });
 
-console.log(
-    "[TOUCHME] Corps Célestes — initialisation automatique."
-);
+console.log("[TOUCHME] Corps Célestes — initialisation automatique.");
