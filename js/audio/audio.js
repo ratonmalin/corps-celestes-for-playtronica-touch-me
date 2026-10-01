@@ -40,7 +40,7 @@ export class AudioEngine {
         this.arpeggiatorTimer = null;
         this.arpeggiatorIndex = 0;
         this.arpeggiatorCurrentId = null;
-        this.arpeggiatorStepMs = 180;
+        this.arpeggiatorStepMs = 520;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
@@ -124,11 +124,14 @@ export class AudioEngine {
         }
 
         const notes = [...this.arpeggiatorNotes.values()].sort((a, b) => a.note - b.note);
-        const event = notes[this.arpeggiatorIndex % notes.length];
+        const root = notes[this.arpeggiatorIndex % notes.length];
         this.arpeggiatorIndex = (this.arpeggiatorIndex + 1) % notes.length;
 
-        const id = "arp-" + event.source + "-" + event.channel + "-" + event.note;
-        this.noteOn(event, id);
+        const id = "arp-" + root.source + "-" + root.channel + "-" + root.note;
+        this.noteOn(
+            { ...root, velocity: Math.min(1, (root.velocity ?? 1) * 0.82) },
+            id
+        );
         this.arpeggiatorCurrentId = id;
     }
 
