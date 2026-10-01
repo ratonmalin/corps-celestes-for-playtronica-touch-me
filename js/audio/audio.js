@@ -70,7 +70,7 @@ export class AudioEngine {
         this.reverbAmount = Math.max(0, Math.min(1, Number(value) || 0));
         if (this.reverbGain && this.audioContext) {
             this.reverbGain.gain.setTargetAtTime(
-                this.reverbAmount * 0.58,
+                this.reverbAmount,
                 this.audioContext.currentTime,
                 0.025
             );
@@ -166,7 +166,7 @@ export class AudioEngine {
         this.reverb = context.createConvolver();
         this.reverb.buffer = impulse;
         this.reverbGain = context.createGain();
-        this.reverbGain.gain.value = 0.58;
+        this.reverbGain.gain.value = this.reverbAmount;
 
         const reverbFilter = context.createBiquadFilter();
         reverbFilter.type = "lowpass";
