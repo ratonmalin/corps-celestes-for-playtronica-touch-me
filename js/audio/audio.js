@@ -40,7 +40,7 @@ export class AudioEngine {
         this.arpeggiatorTimer = null;
         this.arpeggiatorIndex = 0;
         this.arpeggiatorCurrentId = null;
-        this.arpeggiatorStepMs = 520;
+        this.arpeggiatorStepMs = 680;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
@@ -82,8 +82,15 @@ export class AudioEngine {
                 }
                 this.arpeggiatorCurrentId = null;
             }
+            const heldNotes = [...this.arpeggiatorNotes.values()];
             this.arpeggiatorNotes.clear();
             this.arpeggiatorIndex = 0;
+
+            // Turning the arp off should not interrupt physically held notes.
+            for (const event of heldNotes) {
+                this.noteOn(event);
+            }
+
             this.updateSystemState();
             return;
         }
@@ -129,7 +136,11 @@ export class AudioEngine {
 
         const id = "arp-" + root.source + "-" + root.channel + "-" + root.note;
         this.noteOn(
-            { ...root, velocity: Math.min(1, (root.velocity ?? 1) * 0.82) },
+            {
+                ...root,
+                velocity: Math.min(1, (root.velocity ?? 1) * 0.82),
+                chord: true
+            },
             id
         );
         this.arpeggiatorCurrentId = id;
@@ -375,7 +386,12 @@ export class AudioEngine {
             this.reverbInput,
             this.delayInput,
             this.echoInput,
-            { note: audioNote, velocity }
+            {
+                note: audioNote,
+                velocity,
+                chord: Boolean(event.chord),
+                chordIntervals: event.chordIntervals
+            }
         );
 
         voice.setInstrument(this.instrument);
