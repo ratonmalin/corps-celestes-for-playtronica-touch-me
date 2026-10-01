@@ -129,6 +129,8 @@ function resetVolume() {
     audio.setVolume(value);
 }
 
+window.addEventListener("pageshow", resetVolume);
+
 async function boot() {
     resetVolume();
 
