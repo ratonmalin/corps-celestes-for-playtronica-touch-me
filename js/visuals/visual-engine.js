@@ -926,16 +926,20 @@ export class VisualEngine {
                 : 0;
             const holdProgress = Math.min(
                 1,
-                Math.max(0, (holdAge - 3.5) / 3.5)
+                Math.max(0, (holdAge - 2.8) / 2.6)
             );
             const holdEase =
                 holdProgress * holdProgress * (3 - 2 * holdProgress);
+            const unlockPulse = Math.max(
+                0,
+                1 - Math.abs(holdAge - 3.5) / 0.72
+            );
 
             const radius =
                 11 +
                 item.velocity * 13 +
                 (item.duration ? Math.min(item.duration, 3) * 1.8 : 0) +
-                holdEase * 11;
+                holdEase * 16;
 
             const life = item.releaseLife;
 
@@ -1004,6 +1008,56 @@ export class VisualEngine {
 
             // Long contact unlocks a visible second state: the body
             // develops an orbital shell and starts bending the surrounding
+            // space. A brief threshold pulse makes the transition unmistakable.
+            if (!item.releasedAt && unlockPulse > 0) {
+                ctx.save();
+                ctx.globalCompositeOperation = "lighter";
+
+                const burst = 1 - unlockPulse;
+                const burstRadius = radius * (2.2 + burst * 12);
+                ctx.beginPath();
+                ctx.ellipse(
+                    item.x,
+                    item.y,
+                    burstRadius * 1.9,
+                    burstRadius * 0.72,
+                    item.phase + now / 900,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.strokeStyle =
+                    `rgba(${this.hexToRgba(item.hue, 0.16 * unlockPulse * life)})`;
+                ctx.lineWidth = 1.1 + unlockPulse * 1.4;
+                ctx.stroke();
+
+                for (let ray = 0; ray < 12; ray++) {
+                    const angle =
+                        item.phase +
+                        ray * (Math.PI * 2 / 12) +
+                        now / 1800;
+                    const inner = burstRadius * 0.72;
+                    const outer = burstRadius * (1.05 + unlockPulse * 0.35);
+
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        item.x + Math.cos(angle) * inner,
+                        item.y + Math.sin(angle) * inner * 0.68
+                    );
+                    ctx.lineTo(
+                        item.x + Math.cos(angle) * outer,
+                        item.y + Math.sin(angle) * outer * 0.68
+                    );
+                    ctx.strokeStyle =
+                        `rgba(${this.hexToRgba(item.hue, 0.10 * unlockPulse * life)})`;
+                    ctx.lineWidth = 0.65 + unlockPulse * 0.7;
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            // Long contact unlocks a visible second state: the body
+            // develops an orbital shell and starts bending the surrounding
             // space. It arrives slowly enough to feel like a discovery.
             if (!item.releasedAt && holdEase > 0) {
                 ctx.save();
@@ -1020,8 +1074,8 @@ export class VisualEngine {
                     ctx.ellipse(
                         item.x,
                         item.y,
-                        radius * (4.8 + holdEase * 4.2),
-                        radius * (1.15 + holdEase * 1.8),
+                        radius * (5.2 + holdEase * 5.6),
+                        radius * (1.15 + holdEase * 2.2),
                         shellAngle,
                         0,
                         Math.PI * 2
@@ -1037,7 +1091,7 @@ export class VisualEngine {
                 ctx.arc(
                     item.x,
                     item.y,
-                    radius * (5.5 + holdEase * 4 + pulse * 2),
+                    radius * (6.0 + holdEase * 5 + pulse * 2.5),
                     0,
                     Math.PI * 2
                 );
@@ -1053,7 +1107,7 @@ export class VisualEngine {
                         now / (1700 + satellite * 190) +
                         satellite * (Math.PI * 2 / 5);
                     const distance =
-                        radius * (4.8 + holdEase * 7.5);
+                        radius * (5.2 + holdEase * 9.5);
                     const x =
                         item.x + Math.cos(angle) * distance;
                     const y =
@@ -1063,7 +1117,7 @@ export class VisualEngine {
                     ctx.arc(
                         x,
                         y,
-                        0.8 + holdEase * 1.1,
+                        0.9 + holdEase * 1.5,
                         0,
                         Math.PI * 2
                     );
