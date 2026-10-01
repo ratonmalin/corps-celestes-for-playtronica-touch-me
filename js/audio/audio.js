@@ -8,6 +8,12 @@ const voiceModule =
 
 const { Voice } = voiceModule;
 
+const sampleModule = await import(
+    `./string-samples.js?v=${VERSION}`
+);
+
+const { loadStringSamples } = sampleModule;
+
 export class AudioEngine {
 
     constructor(eventBus) {
@@ -67,6 +73,12 @@ export class AudioEngine {
     setInstrument(value) {
         const allowed = ["synth", "strings", "harp"];
         this.instrument = allowed.includes(value) ? value : "synth";
+
+        if (this.instrument === "strings" && this.audioContext) {
+            loadStringSamples(this.audioContext).catch(error => {
+                console.warn("[STRINGS] Could not preload samples:", error);
+            });
+        }
     }
 
 
@@ -421,7 +433,14 @@ export class AudioEngine {
         voice.setInstrument(this.instrument);
 
         this.activeVoices.set(voiceId, voice);
-        voice.start();
+        Promise.resolve(voice.start()).catch(error => {
+            console.warn("[AUDIO] Voice start failed:", error);
+            try { voice.disconnect(); } catch {}
+            if (this.activeVoices.get(voiceId) === voice) {
+                this.activeVoices.delete(voiceId);
+                this.updateSystemState();
+            }
+        });
         this.updateSystemState();
     }
 
