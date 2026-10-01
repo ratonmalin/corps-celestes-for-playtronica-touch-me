@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-11";
+import { AudioEngine } from "./audio/audio.js?v=20261002-12";
 import { VisualEngine } from "./visuals/visual-engine.js";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -17,7 +17,7 @@ const ui = {
     volume: $("volume"),
     volumeOut: $("volume-out"),
     scale: $("scale"),
-    knobs: [...document.querySelectorAll(".effect-knob")]
+    effects: [...document.querySelectorAll(".effect-slider")]
 };
 
 const eventBus = new EventBus();
@@ -53,49 +53,24 @@ function renderSignal(note = null) {
     ui.led.classList.toggle("on", connected || intensity > 0.01);
 }
 
-function updateKnob(knob, value) {
-    const normalized = clamp(value);
-    const circle = knob.querySelector(".effect-arc");
-    if (!circle) return;
-
-    const circumference = 2 * Math.PI * 15;
-    const arcLength = circumference * 0.75;
-    circle.style.strokeDasharray = `${arcLength * normalized} ${circumference}`;
-    circle.style.strokeDashoffset = "0";
-    knob.setAttribute("aria-valuenow", normalized.toFixed(3));
-}
-
-function setEffectFromPointer(knob, event) {
-    const rect = knob.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const angle = Math.atan2(event.clientY - cy, event.clientX - cx) * 180 / Math.PI;
-    let relativeAngle = angle + 135;
-    if (relativeAngle < 0) relativeAngle += 360;
-    let normalized = relativeAngle / 270;
-    normalized = clamp(normalized);
-    const type = knob.dataset.effect;
-    knob.dataset.value = normalized.toFixed(3);
-    updateKnob(knob, normalized);
+function setEffect(type, value, output) {
+    const normalized = clamp(Number(value));
+    output.textContent = Math.round(normalized * 100) + "%";
 
     if (type === "reverb") audio.setReverb(normalized);
     if (type === "delay") audio.setDelay(normalized);
     if (type === "echo") audio.setEcho(normalized);
 }
 
-for (const knob of ui.knobs) {
-    const initial = Number(knob.dataset.value) || 0;
-    updateKnob(knob, initial);
+for (const slider of ui.effects) {
+    const type = slider.dataset.effect;
+    const output = slider.parentElement.querySelector(".effect-value");
+    const initial = Number(slider.value) || 0;
 
-    knob.addEventListener("pointerdown", event => {
-        knob.setPointerCapture(event.pointerId);
-        setEffectFromPointer(knob, event);
-    });
+    setEffect(type, initial, output);
 
-    knob.addEventListener("pointermove", event => {
-        if (knob.hasPointerCapture(event.pointerId)) {
-            setEffectFromPointer(knob, event);
-        }
+    slider.addEventListener("input", () => {
+        setEffect(type, slider.value, output);
     });
 }
 
