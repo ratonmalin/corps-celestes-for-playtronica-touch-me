@@ -921,10 +921,21 @@ export class VisualEngine {
             trailReveal * trailReveal * (3 - 2 * trailReveal);
 
         for (const item of items) {
+            const holdAge = !item.releasedAt
+                ? Math.max(0, (now - item.born) / 1000)
+                : 0;
+            const holdProgress = Math.min(
+                1,
+                Math.max(0, (holdAge - 3.5) / 3.5)
+            );
+            const holdEase =
+                holdProgress * holdProgress * (3 - 2 * holdProgress);
+
             const radius =
                 11 +
                 item.velocity * 13 +
-                (item.duration ? Math.min(item.duration, 3) * 1.8 : 0);
+                (item.duration ? Math.min(item.duration, 3) * 1.8 : 0) +
+                holdEase * 11;
 
             const life = item.releaseLife;
 
@@ -991,11 +1002,84 @@ export class VisualEngine {
                 ctx.restore();
             }
 
+            // Long contact unlocks a visible second state: the body
+            // develops an orbital shell and starts bending the surrounding
+            // space. It arrives slowly enough to feel like a discovery.
+            if (!item.releasedAt && holdEase > 0) {
+                ctx.save();
+                ctx.globalCompositeOperation = "lighter";
+
+                const shellRotation = now / 2600 + item.phase;
+                const shellCount = 3;
+                for (let shell = 0; shell < shellCount; shell++) {
+                    const shellAngle =
+                        shellRotation +
+                        shell * (Math.PI * 2 / shellCount);
+
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        item.x,
+                        item.y,
+                        radius * (4.8 + holdEase * 4.2),
+                        radius * (1.15 + holdEase * 1.8),
+                        shellAngle,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.strokeStyle =
+                        `rgba(${this.hexToRgba(item.hue, (0.055 + holdEase * 0.10) * life)})`;
+                    ctx.lineWidth = 0.7 + holdEase * 0.7;
+                    ctx.stroke();
+                }
+
+                const pulse = 0.5 + 0.5 * Math.sin(now / 360 + item.phase);
+                ctx.beginPath();
+                ctx.arc(
+                    item.x,
+                    item.y,
+                    radius * (5.5 + holdEase * 4 + pulse * 2),
+                    0,
+                    Math.PI * 2
+                );
+                ctx.strokeStyle =
+                    `rgba(${this.hexToRgba(item.hue, (0.035 + holdEase * 0.075) * life)})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // A small number of satellites appear only after the hold.
+                for (let satellite = 0; satellite < 5; satellite++) {
+                    const angle =
+                        item.phase +
+                        now / (1700 + satellite * 190) +
+                        satellite * (Math.PI * 2 / 5);
+                    const distance =
+                        radius * (4.8 + holdEase * 7.5);
+                    const x =
+                        item.x + Math.cos(angle) * distance;
+                    const y =
+                        item.y + Math.sin(angle) * distance * 0.72;
+
+                    ctx.beginPath();
+                    ctx.arc(
+                        x,
+                        y,
+                        0.8 + holdEase * 1.1,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fillStyle =
+                        `rgba(${this.hexToRgba(item.hue, (0.25 + holdEase * 0.48) * life)})`;
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+
             ctx.beginPath();
             ctx.arc(item.x, item.y, radius * 3.8, 0, Math.PI * 2);
             ctx.strokeStyle =
-                `rgba(${this.hexToRgba(item.hue, 0.16 * life)})`;
-            ctx.lineWidth = 1;
+                `rgba(${this.hexToRgba(item.hue, (0.16 + holdEase * 0.10) * life)})`;
+            ctx.lineWidth = 1 + holdEase * 0.4;
             ctx.stroke();
 
             ctx.beginPath();
