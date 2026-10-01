@@ -64,6 +64,10 @@ export class Voice {
                 (this.note - 69) / 12
             );
 
+        const chordFrequencies = this.instrument === "strings"
+            ? [frequency, frequency * Math.pow(2, 4 / 12), frequency * Math.pow(2, 7 / 12)]
+            : [frequency, frequency, frequency];
+
 
         /*
          * NOTE PRINCIPALE
@@ -98,7 +102,7 @@ export class Voice {
 
         this.oscillatorB.frequency
             .setValueAtTime(
-                frequency,
+                chordFrequencies[1],
                 now
             );
 
@@ -126,7 +130,8 @@ export class Voice {
 
         this.oscillatorC.frequency
             .setValueAtTime(
-                this.instrument === "harp" ? frequency * 2
+                this.instrument === "strings"
+                    ? chordFrequencies[2]
                     : frequency * 2,
                 now
             );
@@ -287,7 +292,9 @@ export class Voice {
             context.createGain();
 
         const peakGain =
-            (this.instrument === "harp" ? 0.12 : 0.095) * this.velocity;
+            (this.instrument === "strings"
+                ? 0.072
+                : this.instrument === "harp" ? 0.12 : 0.095) * this.velocity;
 
         this.gain.gain
             .setValueAtTime(
@@ -301,7 +308,7 @@ export class Voice {
          */
 
         const attack =
-            this.instrument === "strings" ? 0.48
+            this.instrument === "strings" ? 0.55
                 : this.instrument === "harp" ? 0.004
                 : 0.07;
 
@@ -362,7 +369,7 @@ export class Voice {
         this.reverbSend.gain
             .setValueAtTime(
                 this.instrument === "strings" ? 1.55
-                    : this.instrument === "harp" ? 1.7
+                    : this.instrument === "harp" ? 0
                     : 1.15,
                 now
             );
@@ -469,9 +476,9 @@ export class Voice {
             systemLevel * 0.055;
 
         const reverbAmount =
-            1.15 +
-            proximity * 0.32 +
-            systemLevel * 0.16;
+            this.instrument === "harp"
+                ? 0
+                : 1.15 + proximity * 0.32 + systemLevel * 0.16;
 
         const filterRate =
             0.05 +
@@ -549,7 +556,7 @@ export class Voice {
             : this.instrument === "strings"
                 ? (heldFor < 0.45 ? 1.8 : heldFor < 2 ? 3.2 : 4.2)
                 : this.instrument === "harp"
-                    ? (heldFor < 0.45 ? 0.8 : heldFor < 2 ? 1.4 : 2.0)
+                    ? (heldFor < 0.45 ? 0.45 : heldFor < 2 ? 0.9 : 1.35)
                     : (heldFor < 0.45 ? 1.1 : heldFor < 2 ? 1.8 : 2.6);
 
         /*
