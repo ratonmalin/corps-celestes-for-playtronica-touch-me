@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=5";
+import { AudioEngine } from "./audio/audio.js";
 import { VisualEngine } from "./visuals/visual-engine.js";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -8,7 +8,7 @@ const ui = {
     connect: $("connect"), audio: $("audio"), fullscreen: $("fullscreen"), status: $("status"), device: $("device"),
     led: $("led"), level: $("level"), cc: $("cc-value"), ccMeter: $("cc-meter"),
     freq: $("freq"), freqMeter: $("freq-meter"), sensitivity: $("sensitivity"),
-    sensOut: $("sens-out"), scale: $("scale"), planet: $("planet")
+    sensOut: $("sens-out"), scale: $("scale")
 };
 
 const eventBus = new EventBus();
@@ -27,7 +27,7 @@ function frequencyForNote(note) {
 function renderSignal(note = null) {
     const sensitivity = Number(ui.sensitivity.value) || 1;
     const effective = clamp(filteredIntensity * sensitivity);
-    ui.level.innerHTML = Math.round(effective * 100) + "<span>%</span>";
+    ui.level.textContent = Math.round(effective * 100) + "%";
     ui.cc.textContent = midi?.lastControllerValue == null ? "090" : String(Math.round(midi.lastControllerValue)).padStart(3, "0");
     ui.ccMeter.style.width = effective * 100 + "%";
     const frequency = frequencyForNote(note);
@@ -35,8 +35,6 @@ function renderSignal(note = null) {
         ui.freq.textContent = Math.round(frequency) + " Hz";
         ui.freqMeter.style.width = clamp((frequency - 60) / 1000) * 100 + "%";
     }
-    ui.planet.style.filter = "brightness(" + (1 + effective * 0.65) + ") saturate(" + (1 + effective * 0.8) + ")";
-    ui.planet.style.transform = "scale(" + (1 + effective * 0.07) + ")";
     ui.led.classList.toggle("on", connected || effective > 0.015);
 }
 function handleSignal(event) {
