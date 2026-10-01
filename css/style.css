@@ -3,8 +3,8 @@
 :root {
     --background: #050505;
     --foreground: #fff;
-    --muted: rgba(255, 255, 255, .62);
-    --line: rgba(255, 255, 255, .28);
+    --muted: rgba(255, 255, 255, .68);
+    --line: rgba(255, 255, 255, .32);
     --accent: #d5a55b;
 }
 
@@ -29,7 +29,7 @@ body {
     position: relative;
     width: 100%;
     min-height: 100svh;
-    padding: 28px 34px;
+    padding: 32px 38px;
     pointer-events: none;
 }
 
@@ -52,36 +52,36 @@ body {
 
 h1 {
     margin: 0;
-    font-size: 20px;
+    font-size: 25px;
     line-height: 1;
     font-weight: 400;
     letter-spacing: -.035em;
 }
 
 .header p {
-    margin: 7px 0 0;
+    margin: 9px 0 0;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 13px;
 }
 
 .header-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     pointer-events: auto;
 }
 
 .text-button,
 .scale-control {
-    min-height: 30px;
-    padding: 6px 9px;
+    min-height: 38px;
+    padding: 7px 11px;
     border: 0;
     border-bottom: 1px solid var(--line);
     border-radius: 0;
     background: transparent;
-    color: rgba(255,255,255,.82);
-    font: 10px/1 Inter, system-ui, sans-serif;
-    letter-spacing: .1em;
+    color: rgba(255,255,255,.86);
+    font: 13px/1 Inter, system-ui, sans-serif;
+    letter-spacing: .08em;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -93,7 +93,7 @@ h1 {
 .scale-control:hover,
 .scale-control:focus-visible {
     color: #fff;
-    border-color: rgba(255,255,255,.58);
+    border-color: rgba(255,255,255,.62);
     outline: none;
 }
 
@@ -103,7 +103,7 @@ h1 {
 }
 
 .scale-control {
-    width: 132px;
+    width: 155px;
     padding-right: 0;
     appearance: none;
     text-align: right;
@@ -111,26 +111,26 @@ h1 {
 
 .info {
     position: fixed;
-    left: 34px;
-    bottom: 31px;
+    left: 38px;
+    bottom: 36px;
     display: flex;
     align-items: center;
-    gap: 9px;
-    color: rgba(255,255,255,.78);
-    font: 10px/1 "Roboto Mono", ui-monospace, monospace;
-    letter-spacing: .07em;
+    gap: 11px;
+    color: rgba(255,255,255,.84);
+    font: 13px/1 "Roboto Mono", ui-monospace, monospace;
+    letter-spacing: .06em;
 }
 
 .info span:nth-last-child(2) {
-    color: rgba(255,255,255,.28);
+    color: rgba(255,255,255,.3);
 }
 
 .led {
-    width: 7px;
-    height: 7px;
-    flex: 0 0 7px;
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
     border-radius: 50%;
-    background: rgba(255,255,255,.3);
+    background: rgba(255,255,255,.32);
 }
 
 .led.on {
@@ -139,20 +139,20 @@ h1 {
 
 .technical {
     position: fixed;
-    right: 34px;
-    bottom: 31px;
+    right: 38px;
+    bottom: 36px;
     display: flex;
     align-items: center;
-    gap: 20px;
-    color: rgba(255,255,255,.56);
-    font: 10px/1 "Roboto Mono", ui-monospace, monospace;
-    letter-spacing: .07em;
+    gap: 24px;
+    color: rgba(255,255,255,.62);
+    font: 13px/1 "Roboto Mono", ui-monospace, monospace;
+    letter-spacing: .06em;
 }
 
 .technical b,
 .technical output {
-    margin-left: 6px;
-    color: rgba(255,255,255,.82);
+    margin-left: 7px;
+    color: rgba(255,255,255,.88);
     font-weight: 300;
 }
 
@@ -162,9 +162,9 @@ h1 {
 }
 
 .technical input {
-    width: 74px;
-    height: 13px;
-    margin-left: 9px;
+    width: 90px;
+    height: 15px;
+    margin-left: 10px;
     accent-color: var(--accent);
 }
 
@@ -185,34 +185,34 @@ h1 {
 }
 
 @media (max-width: 700px) {
-    .app { padding: 18px 14px; }
+    .app { padding: 22px 16px; }
 
-    h1 { font-size: 18px; }
+    h1 { font-size: 22px; }
 
-    .header p { font-size: 9px; }
+    .header p { font-size: 11px; }
 
-    .header-actions { gap: 4px; }
+    .header-actions { gap: 5px; }
 
     .text-button,
     .scale-control {
-        min-height: 28px;
-        padding: 5px 6px;
-        font-size: 9px;
+        min-height: 34px;
+        padding: 6px 7px;
+        font-size: 11px;
     }
 
-    .scale-control { width: 108px; }
+    .scale-control { width: 125px; }
 
     .info {
-        left: 14px;
-        bottom: 18px;
-        font-size: 9px;
+        left: 16px;
+        bottom: 20px;
+        font-size: 11px;
     }
 
     .technical {
-        right: 14px;
-        bottom: 18px;
-        font-size: 9px;
-        gap: 12px;
+        right: 16px;
+        bottom: 20px;
+        font-size: 11px;
+        gap: 14px;
     }
 
     .technical span:first-child {
@@ -220,6 +220,6 @@ h1 {
     }
 
     .technical input {
-        width: 48px;
+        width: 58px;
     }
 }
