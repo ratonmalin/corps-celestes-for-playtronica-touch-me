@@ -85,7 +85,7 @@ export class Voice {
 
         this.oscillatorB.frequency
             .setValueAtTime(
-                frequency * 1.5,
+                frequency,
                 now
             );
 
@@ -136,7 +136,7 @@ export class Voice {
 
         this.oscillatorAGain.gain.setValueAtTime(0.72, now);
         this.oscillatorBGain.gain.setValueAtTime(0.24, now);
-        this.oscillatorCGain.gain.setValueAtTime(0.035, now);
+        this.oscillatorCGain.gain.setValueAtTime(0.08, now);
         this.oscillatorDGain.gain.setValueAtTime(0.0001, now);
 
         this.oscillatorA.connect(this.oscillatorAGain);
@@ -160,12 +160,12 @@ export class Voice {
         this.filter.type = "lowpass";
 
         const filterBase =
-            720 +
-            ((this.note - 48) / 31) * 620;
+            850 +
+            ((this.note - 48) / 31) * 1050;
 
         this.filter.frequency
             .setValueAtTime(
-                Math.max(650, Math.min(1400, filterBase)),
+                Math.max(700, Math.min(1900, filterBase)),
                 now
             );
 
@@ -196,7 +196,7 @@ export class Voice {
 
         this.filterLfoGain.gain
             .setValueAtTime(
-                150,
+                280,
                 now
             );
 
@@ -258,7 +258,7 @@ export class Voice {
             context.createGain();
 
         const peakGain =
-            0.085 * this.velocity;
+            0.095 * this.velocity;
 
         this.gain.gain
             .setValueAtTime(
@@ -319,6 +319,7 @@ export class Voice {
         this.oscillatorAGain.connect(this.filter);
         this.oscillatorBGain.connect(this.filter);
         this.oscillatorCGain.connect(this.filter);
+        this.oscillatorDGain.connect(this.filter);
 
         this.filter.connect(
             this.gain
@@ -359,17 +360,31 @@ export class Voice {
         this.filterLfo.start(now);
         this.oscillatorD.start(now);
 
-        // Long holds unlock a second acoustic state: a quiet sub-octave,
-        // stronger fifth and widening spectral space. It arrives slowly,
-        // so the effect feels discovered rather than triggered.
+        // After the same 3.5s threshold used by the visual body,
+        // the voice slowly reveals a darker resonance instead of a new effect.
         this.holdBloomTimer = window.setTimeout(() => {
             if (this.isReleased || !this.audioContext) return;
             const bloomNow = this.audioContext.currentTime;
-            this.oscillatorDGain?.gain.setTargetAtTime(0.075 * this.velocity, bloomNow, 2.4);
-            this.oscillatorBGain?.gain.setTargetAtTime(0.31, bloomNow, 2.8);
-            this.oscillatorCGain?.gain.setTargetAtTime(0.075, bloomNow, 3.2);
-            this.filter?.frequency.setTargetAtTime(1650, bloomNow, 3.5);
-            this.reverbSend?.gain.setTargetAtTime(1.55, bloomNow, 4.0);
+            this.oscillatorDGain?.gain.setTargetAtTime(
+                0.025 * this.velocity,
+                bloomNow,
+                2.8
+            );
+            this.oscillatorCGain?.gain.setTargetAtTime(
+                0.105,
+                bloomNow,
+                3.4
+            );
+            this.filter?.frequency.setTargetAtTime(
+                2050,
+                bloomNow,
+                3.8
+            );
+            this.reverbSend?.gain.setTargetAtTime(
+                1.48,
+                bloomNow,
+                4.2
+            );
         }, 3500);
 
         this.oscillatorA.start(now);
