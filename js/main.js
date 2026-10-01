@@ -29,14 +29,21 @@ function frequencyForNote(note) {
 function renderSignal(note = null) {
     const sensitivity = Number(ui.sensitivity.value) || 1;
     const effective = clamp(filteredIntensity * sensitivity);
-    ui.cc.textContent = midi?.lastControllerValue == null ? "090" : String(Math.round(midi.lastControllerValue)).padStart(3, "0");
+
+    ui.cc.textContent = midi?.lastControllerValue == null
+        ? "090"
+        : String(Math.round(midi.lastControllerValue)).padStart(3, "0");
 
     const frequency = frequencyForNote(note);
+
     if (frequency > 0) {
         ui.freq.textContent = Math.round(frequency) + " Hz";
     }
 
-    ui.led.classList.toggle("on", connected || effective > 0.015);
+    ui.led.classList.toggle(
+        "on",
+        connected || effective > 0.015
+    );
 }
 
 function handleSignal(event) {
@@ -56,7 +63,10 @@ function handleSignal(event) {
     }
 
     if (event.type === "intensity" || event.type === "note") {
-        filteredIntensity += (clamp(event.value) - filteredIntensity) * (event.type === "note" ? 0.5 : 0.28);
+        filteredIntensity +=
+            (clamp(event.value) - filteredIntensity) *
+            (event.type === "note" ? 0.5 : 0.28);
+
         lastIntensityAt = performance.now();
         renderSignal(event.note ?? null);
     }
@@ -77,29 +87,59 @@ ui.fullscreen.addEventListener("click", async () => {
 });
 
 document.addEventListener("fullscreenchange", () => {
-    ui.fullscreen.textContent = document.fullscreenElement ? "QUITTER" : "FULL SCREEN";
+    ui.fullscreen.textContent =
+        document.fullscreenElement ? "QUITTER" : "FULL SCREEN";
 });
 
 ui.sensitivity.addEventListener("input", () => {
-    ui.sensOut.textContent = Number(ui.sensitivity.value).toFixed(1) + "×";
+    const value = Number(ui.sensitivity.value);
+
+    ui.sensOut.textContent = value.toFixed(1) + "×";
+
+    if (midi) {
+        midi.setSensitivity(value);
+    }
+
     renderSignal();
 });
 
 ui.volume.addEventListener("input", () => {
     const value = Number(ui.volume.value);
-    ui.volumeOut.textContent = Math.round(value * 100) + "%";
+
+    ui.volumeOut.textContent =
+        Math.round(value * 100) + "%";
+
     audioEngine.setVolume(value);
-    localStorage.setItem("corps-celestes-volume", String(value));
+
+    localStorage.setItem(
+        "corps-celestes-volume",
+        String(value)
+    );
+});
+
+ui.volume.addEventListener("change", () => {
+    audioEngine.setVolume(Number(ui.volume.value));
 });
 
 ui.scale.addEventListener("change", () => {
-    eventBus.emit({ type: "scalechange", index: Number(ui.scale.value) });
-    ui.status.textContent = connected ? "CAPTEUR CONNECTÉ · EN ATTENTE" : "EN ATTENTE DU TOUCHME";
+    eventBus.emit({
+        type: "scalechange",
+        index: Number(ui.scale.value)
+    });
+
+    ui.status.textContent = connected
+        ? "CAPTEUR CONNECTÉ · EN ATTENTE"
+        : "EN ATTENTE DU TOUCHME";
 });
 
 eventBus.on("noteon", event => {
-    const value = Number.isFinite(event.touchIntensity) ? event.touchIntensity : event.velocity;
-    filteredIntensity += (clamp(value) - filteredIntensity) * 0.5;
+    const value = Number.isFinite(event.touchIntensity)
+        ? event.touchIntensity
+        : event.velocity;
+
+    filteredIntensity +=
+        (clamp(value) - filteredIntensity) * 0.5;
+
     lastIntensityAt = performance.now();
     renderSignal(event.note);
 });
@@ -126,33 +166,45 @@ function decay() {
 }
 
 async function boot() {
-    const savedVolume = Number(localStorage.getItem("corps-celestes-volume"));
+    const savedVolume =
+        Number(localStorage.getItem("corps-celestes-volume"));
 
     if (Number.isFinite(savedVolume)) {
         ui.volume.value = String(clamp(savedVolume));
     }
 
     const volume = Number(ui.volume.value);
-    ui.volumeOut.textContent = Math.round(volume * 100) + "%";
+
+    ui.volumeOut.textContent =
+        Math.round(volume * 100) + "%";
+
     audioEngine.setVolume(volume);
 
+    const sensitivity = Number(ui.sensitivity.value) || 1;
+    ui.sensOut.textContent = sensitivity.toFixed(1) + "×";
+
     visualEngine.start();
-    ui.sensOut.textContent = Number(ui.sensitivity.value).toFixed(1) + "×";
-    eventBus.emit({ type: "scalechange", index: Number(ui.scale.value || 0) });
+
+    eventBus.emit({
+        type: "scalechange",
+        index: Number(ui.scale.value || 0)
+    });
+
     ui.led.classList.remove("on");
     ui.status.textContent = "INITIALISATION";
     renderSignal();
     decay();
 
-    // Ne pas bloquer l'initialisation MIDI sur AudioContext.resume().
-    // Certains navigateurs laissent cette promesse en attente tant qu'aucune
-    // activation utilisateur n'a eu lieu.
     audioEngine.start().catch(error => {
-        ui.status.textContent = "EN ATTENTE DU TOUCHME";
         console.warn("[AUDIO] Autostart impossible:", error);
     });
 
-    midi = new TouchMeMidiInput(eventBus, handleSignal);
+    midi = new TouchMeMidiInput(
+        eventBus,
+        handleSignal
+    );
+
+    midi.setSensitivity(sensitivity);
     await midi.start();
 
     const waitForTouchMe = () => {
@@ -162,29 +214,47 @@ async function boot() {
 
         if (midi?.input) {
             connected = true;
-            ui.status.textContent = "CAPTEUR CONNECTÉ · EN ATTENTE";
-            ui.device.textContent = String(midi.input.name || "TOUCHME").toUpperCase();
+            ui.status.textContent =
+                "CAPTEUR CONNECTÉ · EN ATTENTE";
+
+            ui.device.textContent =
+                String(
+                    midi.input.name || "TOUCHME"
+                ).toUpperCase();
+
             ui.led.classList.add("on");
             return;
         }
 
-        ui.status.textContent = "RECHERCHE DU TOUCHME";
-        window.setTimeout(waitForTouchMe, 750);
+        ui.status.textContent =
+            "RECHERCHE DU TOUCHME";
+
+        window.setTimeout(
+            waitForTouchMe,
+            750
+        );
     };
 
     waitForTouchMe();
 
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-            audioEngine.resume().catch(() => {});
-            waitForTouchMe();
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+            if (document.visibilityState === "visible") {
+                audioEngine.resume().catch(() => {});
+                waitForTouchMe();
+            }
         }
-    });
+    );
 }
 
 boot().catch(error => {
-    ui.status.textContent = "INITIALISATION IMPOSSIBLE";
+    ui.status.textContent =
+        "INITIALISATION IMPOSSIBLE";
+
     console.warn("[TOUCHME]", error);
 });
 
-console.log("[TOUCHME] Corps Célestes — initialisation automatique.");
+console.log(
+    "[TOUCHME] Corps Célestes — initialisation automatique."
+);
