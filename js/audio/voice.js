@@ -659,6 +659,14 @@ export class Voice {
 
         this.isReleased = true;
 
+        if (!this.gain) {
+            if (this.maxHoldTimer !== null) {
+                clearTimeout(this.maxHoldTimer);
+                this.maxHoldTimer = null;
+            }
+            return;
+        }
+
         const context = this.audioContext;
         const now = context.currentTime;
 
