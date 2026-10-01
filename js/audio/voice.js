@@ -28,8 +28,6 @@ export class Voice {
         this.filter = null;
         this.gain = null;
         this.reverbSend = null;
-        this.delayInput = null;
-        this.echoInput = null;
         this.panner = null;
 
         this.lfo = null;
