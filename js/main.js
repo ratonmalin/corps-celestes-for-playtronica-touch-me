@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-16";
+import { AudioEngine } from "./audio/audio.js?v=20261002-17";
 import { VisualEngine } from "./visuals/visual-engine.js";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -75,12 +75,13 @@ function setEffect(type, value, output) {
 
 ui.instrument.addEventListener("change", () => {
     setInstrument(ui.instrument.value);
-setArpeggiator(false);
+});
 
 ui.arpeggiator.addEventListener("click", () => {
     setArpeggiator(!audio.arpeggiatorEnabled);
 });
-});
+
+setArpeggiator(false);
 
 setInstrument(ui.instrument.value);
 
