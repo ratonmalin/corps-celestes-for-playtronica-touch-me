@@ -8,6 +8,7 @@ export class TouchMeMidiInput {
         this.activeNotes = new Map();
         this.lastControllerValue = null;
         this.sensitivity = 1;
+        this.visibilityHandler = null;
 
         this.handleMessage = this.handleMessage.bind(this);
         this.handleStateChange = this.handleStateChange.bind(this);
@@ -21,41 +22,43 @@ export class TouchMeMidiInput {
             : 1;
     }
 
-    start() {
+    async start() {
         if (!navigator.requestMIDIAccess) {
-            this.onSignal?.({ type: "status", status: "WEB MIDI INDISPONIBLE" });
-            return Promise.resolve();
+            this.onSignal?.({
+                type: "status",
+                status: "WEB MIDI INDISPONIBLE"
+            });
+            return;
         }
 
-        return navigator.requestMIDIAccess()
-            .then(access => {
-                this.access = access;
-                this.refreshInput();
-                this.access.onstatechange = this.handleStateChange;
+        try {
+            this.access = await navigator.requestMIDIAccess();
+            this.access.onstatechange = this.handleStateChange;
 
-                this.handleVisibilityChange = () => {
-                    if (document.visibilityState !== "visible") {
-                        this.releaseAll();
-                    }
-                };
+            this.visibilityHandler = () => {
+                if (document.visibilityState !== "visible") {
+                    this.releaseAll();
+                }
+            };
 
-                document.addEventListener(
-                    "visibilitychange",
-                    this.handleVisibilityChange
-                );
+            document.addEventListener(
+                "visibilitychange",
+                this.visibilityHandler
+            );
+            window.addEventListener("blur", this.releaseAll);
 
-                window.addEventListener("blur", this.releaseAll);
-            })
-            .catch(error => {
-                this.onSignal?.({
-                    type: "status",
-                    status: error?.name === "NotAllowedError"
+            this.refreshInput();
+        } catch (error) {
+            this.onSignal?.({
+                type: "status",
+                status:
+                    error?.name === "NotAllowedError"
                         ? "ACCÈS MIDI REFUSÉ"
                         : "MIDI INDISPONIBLE"
-                });
-
-                console.warn("[TOUCHME MIDI]", error);
             });
+
+            console.warn("[TOUCHME MIDI]", error);
+        }
     }
 
     refreshInput() {
@@ -69,7 +72,7 @@ export class TouchMeMidiInput {
 
         this.input =
             inputs.find(port =>
-                /touchme|touch|playtronica/i.test(
+                /touchme|playtronica/i.test(
                     String(port.name || "") +
                     " " +
                     String(port.manufacturer || "")
@@ -79,19 +82,8 @@ export class TouchMeMidiInput {
         if (!this.input) {
             this.onSignal?.({
                 type: "status",
-                status: "CONNECTEZ LE TOUCHME"
+                status: "TOUCHME EN ATTENTE"
             });
-
-            console.info(
-                "[TOUCHME MIDI] Entrées disponibles:",
-                inputs.map(port => ({
-                    name: port.name,
-                    manufacturer: port.manufacturer,
-                    state: port.state,
-                    connection: port.connection
-                }))
-            );
-
             return;
         }
 
@@ -109,6 +101,7 @@ export class TouchMeMidiInput {
             event.port.state === "disconnected"
         ) {
             this.releaseAll();
+            this.input = null;
         }
 
         this.refreshInput();
@@ -122,14 +115,14 @@ export class TouchMeMidiInput {
         const channel = status & 0x0f;
 
         if (type === 0xb0 && data1 === 90) {
-            const intensity = data2 / 127;
+            const value = data2 / 127;
 
-            this.lastIntensity.set(channel, intensity);
+            this.lastIntensity.set(channel, value);
             this.lastControllerValue = data2;
 
             this.onSignal?.({
                 type: "intensity",
-                value: intensity,
+                value: clamp01(value * this.sensitivity),
                 controller: 90,
                 channel
             });
@@ -138,13 +131,9 @@ export class TouchMeMidiInput {
         }
 
         if (type === 0x90 && data2 > 0) {
-            const rawIntensity =
-                this.lastIntensity.get(channel) ??
-                data2 / 127;
-
-            const intensity = Math.max(
-                0,
-                Math.min(1, rawIntensity * this.sensitivity)
+            const raw = this.lastIntensity.get(channel);
+            const value = clamp01(
+                (raw ?? data2 / 127) * this.sensitivity
             );
 
             const key = channel + "-" + data1;
@@ -157,16 +146,16 @@ export class TouchMeMidiInput {
             this.eventBus.emit({
                 type: "noteon",
                 note: data1,
-                velocity: Math.max(0.05, intensity),
+                velocity: Math.max(0.05, value),
                 channel,
                 source: "touchme",
                 timestamp: performance.now(),
-                touchIntensity: intensity
+                touchIntensity: value
             });
 
             this.onSignal?.({
                 type: "note",
-                value: intensity,
+                value,
                 note: data1,
                 channel
             });
@@ -174,10 +163,7 @@ export class TouchMeMidiInput {
             return;
         }
 
-        if (
-            type === 0x80 ||
-            (type === 0x90 && data2 === 0)
-        ) {
+        if (type === 0x80 || (type === 0x90 && data2 === 0)) {
             this.activeNotes.delete(channel + "-" + data1);
 
             this.eventBus.emit({
@@ -208,4 +194,8 @@ export class TouchMeMidiInput {
             });
         }
     }
+}
+
+function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
 }
