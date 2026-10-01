@@ -3,59 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Corps Célestes — instrument audiovisuel pour Playtronica TouchMe.">
-    <title>Corps Célestes · TouchMe</title>
+    <title>Corps Célestes</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
     <main class="app">
         <header class="header">
-            <div class="header-info">
+            <div>
                 <h1>Corps Célestes</h1>
-                <p>Playtronica TouchMe · instrument audiovisuel</p>
+                <p>Playtronica TouchMe · Camille Grigaut</p>
             </div>
 
             <div class="header-actions">
-                <button id="connect" class="text-button" type="button">CONNECTER</button>
+                <button id="connect" class="text-button" type="button">TOUCHME</button>
                 <button id="audio" class="text-button" type="button">AUDIO</button>
-                <select id="scale" class="scale-control" aria-label="Choisir une gamme">
-                    <option value="0">GAMME · PENTATONIQUE</option>
+                <select id="scale" class="scale-control" aria-label="Gamme">
+                    <option value="0">GAMME · MAJEURE</option>
                     <option value="1">GAMME · DORIENNE</option>
                     <option value="2">GAMME · CHROMATIQUE</option>
                 </select>
             </div>
         </header>
 
-        <section class="readout" aria-label="État du système">
-            <div class="status-line">
-                <span id="led" class="led"></span>
-                <span id="status">EN ATTENTE DU TOUCHME</span>
-                <span class="separator">/</span>
-                <span id="device">AUCUN APPAREIL</span>
-            </div>
+        <div class="info">
+            <span id="led" class="led"></span>
+            <span id="status">EN ATTENTE</span>
+            <span>/</span>
+            <span id="device">AUCUN APPAREIL</span>
+        </div>
 
-            <div class="meters">
-                <div class="meter">
-                    <span>TOUCHER</span>
-                    <div class="track"><i id="cc-meter"></i></div>
-                    <b id="cc-value">—</b>
-                </div>
-
-                <div class="meter">
-                    <span>NOTE</span>
-                    <div class="track"><i id="freq-meter"></i></div>
-                    <b id="freq">—</b>
-                </div>
-            </div>
-
-            <div class="controls">
-                <label for="sensitivity">SENSIBILITÉ <output id="sens-out">1.0×</output></label>
+        <div class="technical">
+            <span>TOUCHER <b id="cc-value">—</b></span>
+            <span>NOTE <b id="freq">—</b></span>
+            <label>
+                SENSIBILITÉ
+                <output id="sens-out">1.0×</output>
                 <input id="sensitivity" type="range" min=".25" max="3" value="1" step=".05">
-            </div>
-        </section>
+            </label>
+        </div>
 
-        <div id="planet" class="state-proxy" aria-hidden="true"></div>
-        <span id="level" class="level-proxy" aria-hidden="true">0%</span>
+        <div id="planet" class="proxy" aria-hidden="true"></div>
+        <span id="level" class="proxy" aria-hidden="true">0%</span>
+        <span id="cc-meter" class="proxy" aria-hidden="true"></span>
+        <span id="freq-meter" class="proxy" aria-hidden="true"></span>
     </main>
 
     <script type="module" src="./js/main.js"></script>
