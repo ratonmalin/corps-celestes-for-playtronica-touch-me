@@ -19,7 +19,6 @@ const ui = {
     scale: $("scale")
 };
 
-const VOLUME_STORAGE_KEY = "corps-celestes-volume-v3";
 
 const eventBus = new EventBus();
 const audio = new AudioEngine(eventBus);
@@ -79,7 +78,6 @@ ui.volume.addEventListener("input", () => {
     const value = Number(ui.volume.value);
     audio.setVolume(value);
     ui.volumeOut.textContent = Math.round(value * 100) + "%";
-    localStorage.setItem(VOLUME_STORAGE_KEY, String(value));
 });
 
 ui.sensitivity.addEventListener("input", () => {
@@ -120,18 +118,16 @@ function decay() {
     requestAnimationFrame(decay);
 }
 
-function loadVolume() {
-    const stored = localStorage.getItem(VOLUME_STORAGE_KEY);
-    const parsed = stored === null ? NaN : Number(stored);
-    const value = Number.isFinite(parsed) ? clamp(parsed) : 0.85;
+function resetVolume() {
+    const value = 0.5;
 
     ui.volume.value = String(value);
-    ui.volumeOut.textContent = Math.round(value * 100) + "%";
+    ui.volumeOut.textContent = "50%";
     audio.setVolume(value);
 }
 
 async function boot() {
-    loadVolume();
+    resetVolume();
 
     const sensitivity = Number(ui.sensitivity.value) || 1;
     ui.sensOut.textContent = sensitivity.toFixed(1) + "×";
