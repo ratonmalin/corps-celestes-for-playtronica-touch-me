@@ -140,12 +140,16 @@ async function boot() {
     ui.sensOut.textContent = Number(ui.sensitivity.value).toFixed(1) + "×";
     eventBus.emit({ type: "scalechange", index: Number(ui.scale.value || 0) });
     ui.led.classList.remove("on");
+    ui.status.textContent = "INITIALISATION";
     renderSignal();
     decay();
 
-    await audioEngine.start().catch(error => {
-        ui.status.textContent = "AUDIO EN ATTENTE";
-        console.warn("[AUDIO]", error);
+    // Ne pas bloquer l'initialisation MIDI sur AudioContext.resume().
+    // Certains navigateurs laissent cette promesse en attente tant qu'aucune
+    // activation utilisateur n'a eu lieu.
+    audioEngine.start().catch(error => {
+        ui.status.textContent = "EN ATTENTE DU TOUCHME";
+        console.warn("[AUDIO] Autostart impossible:", error);
     });
 
     midi = new TouchMeMidiInput(eventBus, handleSignal);
