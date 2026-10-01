@@ -122,7 +122,8 @@ function decay() {
 
 function loadVolume() {
     const stored = localStorage.getItem(VOLUME_STORAGE_KEY);
-    const value = stored === null ? 0.85 : clamp(Number(stored));
+    const parsed = stored === null ? NaN : Number(stored);
+    const value = Number.isFinite(parsed) ? clamp(parsed) : 0.85;
 
     ui.volume.value = String(value);
     ui.volumeOut.textContent = Math.round(value * 100) + "%";
