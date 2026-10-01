@@ -5,6 +5,7 @@ export class VisualEngine {
         this.ctx = null;
 
         this.active = new Map();
+        this.bodyPositions = new Map();
         this.memory = [];
         this.idleBodies = [];
         this.running = false;
@@ -259,10 +260,14 @@ export class VisualEngine {
             hue: this.getNoteHue(event.note),
             duration: null,
             mass: 0.75 + ((event.note % 12) / 11) * 0.55,
-            x: innerWidth * (0.5 + Math.sin(event.note * 1.73) * 0.25),
-            y: innerHeight * (0.47 + Math.cos(event.note * 1.17) * 0.20),
-            vx: Math.cos(event.note * 0.83) * 18,
-            vy: Math.sin(event.note * 0.61) * 18,
+            x: this.bodyPositions.get(event.note)?.x ??
+                innerWidth * (0.5 + Math.sin(event.note * 1.73) * 0.25),
+            y: this.bodyPositions.get(event.note)?.y ??
+                innerHeight * (0.47 + Math.cos(event.note * 1.17) * 0.20),
+            vx: this.bodyPositions.get(event.note)?.vx ??
+                Math.cos(event.note * 0.83) * 18,
+            vy: this.bodyPositions.get(event.note)?.vy ??
+                Math.sin(event.note * 0.61) * 18,
             trail: []
         });
     }
@@ -279,6 +284,13 @@ export class VisualEngine {
 
         item.releasedAt = performance.now();
         item.duration = Math.max(0.05, (item.releasedAt - item.born) / 1000);
+
+        this.bodyPositions.set(item.note, {
+            x: item.x,
+            y: item.y,
+            vx: item.vx,
+            vy: item.vy
+        });
 
         const memoryIndex = this.memory.length;
         const seed = item.note * 12.9898 + memoryIndex * 78.233;
@@ -475,79 +487,15 @@ export class VisualEngine {
 
                 item.x += item.vx * dt;
                 item.y += item.vy * dt;
+                this.bodyPositions.set(item.note, {
+                    x: item.x,
+                    y: item.y,
+                    vx: item.vx,
+                    vy: item.vy
+                });
 
-                // A held system slowly reveals a precise geometric attractor.
-                // The physics remains active; the longer the contact lasts,
-                // the more clearly the trajectory resolves into a shape.
-                if (!item.releasedAt && count >= 2) {
-                    const formationAge = Math.max(
-                        0,
-                        (now - Math.min(...items.map(candidate => candidate.born))) / 1000
-                    );
-                    const formation = Math.min(1, Math.max(0, (formationAge - 1.8) / 8));
-                    const easedFormation =
-                        formation * formation * (3 - 2 * formation);
-                    const liveItems = items.filter(candidate => !candidate.releasedAt);
-                    const ordered = [...liveItems].sort((a, b) => a.note - b.note);
-                    const index = ordered.indexOf(item);
-
-                    if (index !== -1 && ordered.length >= 2) {
-                        const centerX = center.x;
-                        const centerY = center.y;
-                        const rotation =
-                            elapsed * (0.04 + noteProfile * 0.055);
-                        const radiusBase =
-                            Math.min(
-                                innerWidth * 0.22,
-                                190 + ordered.length * 12
-                            );
-                        const radiusX =
-                            radiusBase *
-                            (0.72 + noteProfile * 0.56);
-                        const radiusY = radiusX * (0.68 + noteProfile * 0.08);
-                        let targetX = centerX;
-                        let targetY = centerY;
-
-                        if (ordered.length === 2) {
-                            const angle =
-                                (index === 0 ? Math.PI : 0) +
-                                noteProfile * Math.PI * 0.35;
-                            targetX = centerX + Math.cos(angle + rotation) * radiusX;
-                            targetY = centerY + Math.sin(angle + rotation) * radiusY;
-                        } else if (ordered.length === 3) {
-                            const angle =
-                                rotation -
-                                Math.PI / 2 +
-                                index * (Math.PI * 2 / 3) +
-                                noteProfile * Math.PI * 0.18;
-                            targetX = centerX + Math.cos(angle) * radiusX;
-                            targetY = centerY + Math.sin(angle) * radiusY;
-                        } else if (ordered.length === 4) {
-                            const angle =
-                                Math.PI / 4 +
-                                rotation +
-                                index * (Math.PI / 2) +
-                                noteProfile * Math.PI * 0.16;
-                            targetX = centerX + Math.cos(angle) * radiusX;
-                            targetY = centerY + Math.sin(angle) * radiusY;
-                        } else {
-                            const angle =
-                                rotation * (1.2 + noteProfile * 1.0) +
-                                index * (Math.PI * 2 / ordered.length) +
-                                noteProfile * 0.35;
-                            const spiralRadius =
-                                radiusX *
-                                (0.42 +
-                                    index / Math.max(1, ordered.length - 1) * 0.58);
-                            targetX = centerX + Math.cos(angle) * spiralRadius;
-                            targetY = centerY + Math.sin(angle) * spiralRadius * 0.68;
-                        }
-
-                        const pull = 0.4 + easedFormation * 4.2;
-                        item.x += (targetX - item.x) * pull * dt;
-                        item.y += (targetY - item.y) * pull * dt;
-                    }
-                }
+                // Long holds stay in the physical orbit. No late formation
+                // target is applied: this keeps trajectories continuous over time.
 
                 // During the first second of a chord, the system briefly
                 // reorganizes itself into a constellation before returning
