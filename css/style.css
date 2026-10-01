@@ -3,8 +3,8 @@
 :root {
     --background: #050505;
     --foreground: #fff;
-    --muted: rgba(255, 255, 255, .45);
-    --line: rgba(255, 255, 255, .18);
+    --muted: rgba(255, 255, 255, .58);
+    --line: rgba(255, 255, 255, .24);
     --accent: #d5a55b;
 }
 
@@ -14,6 +14,7 @@ html, body {
     margin: 0;
     min-height: 100%;
     background: var(--background);
+    overscroll-behavior: none;
 }
 
 body {
@@ -66,21 +67,25 @@ h1 {
 .header-actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
     pointer-events: auto;
 }
 
 .text-button,
 .scale-control {
-    padding: 4px 0;
+    min-height: 28px;
+    padding: 5px 8px;
     border: 0;
     border-bottom: 1px solid var(--line);
     border-radius: 0;
     background: transparent;
-    color: rgba(255,255,255,.65);
+    color: rgba(255,255,255,.78);
     font: 8px/1 Inter, system-ui, sans-serif;
     letter-spacing: .12em;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 120ms ease, border-color 120ms ease;
 }
 
 .text-button:hover,
@@ -88,8 +93,13 @@ h1 {
 .scale-control:hover,
 .scale-control:focus-visible {
     color: #fff;
-    border-color: rgba(255,255,255,.45);
+    border-color: rgba(255,255,255,.52);
     outline: none;
+}
+
+.text-button:active,
+.scale-control:active {
+    color: var(--accent);
 }
 
 .scale-control {
@@ -105,21 +115,22 @@ h1 {
     bottom: 31px;
     display: flex;
     align-items: center;
-    gap: 7px;
-    color: var(--muted);
-    font: 7px/1 "Roboto Mono", ui-monospace, monospace;
-    letter-spacing: .12em;
+    gap: 8px;
+    color: rgba(255,255,255,.72);
+    font: 8px/1 "Roboto Mono", ui-monospace, monospace;
+    letter-spacing: .08em;
 }
 
 .info span:nth-last-child(2) {
-    color: rgba(255,255,255,.16);
+    color: rgba(255,255,255,.24);
 }
 
 .led {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
     border-radius: 50%;
-    background: rgba(255,255,255,.2);
+    background: rgba(255,255,255,.28);
 }
 
 .led.on {
@@ -133,15 +144,15 @@ h1 {
     display: flex;
     align-items: center;
     gap: 18px;
-    color: rgba(255,255,255,.3);
-    font: 7px/1 "Roboto Mono", ui-monospace, monospace;
-    letter-spacing: .1em;
+    color: rgba(255,255,255,.5);
+    font: 8px/1 "Roboto Mono", ui-monospace, monospace;
+    letter-spacing: .08em;
 }
 
 .technical b,
 .technical output {
     margin-left: 5px;
-    color: rgba(255,255,255,.55);
+    color: rgba(255,255,255,.78);
     font-weight: 300;
 }
 
@@ -152,7 +163,7 @@ h1 {
 
 .technical input {
     width: 70px;
-    height: 10px;
+    height: 12px;
     margin-left: 8px;
     accent-color: var(--accent);
 }
@@ -180,18 +191,27 @@ h1 {
 
     .header p { font-size: 8px; }
 
-    .header-actions { gap: 9px; }
+    .header-actions { gap: 3px; }
+
+    .text-button,
+    .scale-control {
+        min-height: 26px;
+        padding: 4px 5px;
+        font-size: 7px;
+    }
 
     .scale-control { width: 92px; }
 
     .info {
         left: 14px;
         bottom: 18px;
+        font-size: 7px;
     }
 
     .technical {
         right: 14px;
         bottom: 18px;
+        font-size: 7px;
     }
 
     .technical span:first-child {
