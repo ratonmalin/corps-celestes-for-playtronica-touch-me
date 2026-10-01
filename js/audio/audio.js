@@ -53,8 +53,6 @@ export class AudioEngine {
             "visibilitychange",
             this.handleVisibilityChange
         );
-
-
     }
 
     setVolume(value) {
@@ -134,8 +132,8 @@ export class AudioEngine {
 
         this.reverbInput = context.createGain();
 
-        const duration = 4.2;
-        const decay = 6.5;
+        const duration = 2.8;
+        const decay = 5.5;
         const sampleRate = context.sampleRate;
         const length = Math.floor(sampleRate * duration);
 
@@ -169,13 +167,13 @@ export class AudioEngine {
         this.reverbGain =
             context.createGain();
 
-        this.reverbGain.gain.value = 0.9;
+        this.reverbGain.gain.value = 0.58;
 
         const reverbFilter =
             context.createBiquadFilter();
 
         reverbFilter.type = "lowpass";
-        reverbFilter.frequency.value = 2200;
+        reverbFilter.frequency.value = 2600;
         reverbFilter.Q.value = 0.2;
 
         this.reverbInput.connect(this.reverb);
