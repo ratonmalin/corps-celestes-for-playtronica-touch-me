@@ -1,3 +1,5 @@
+import { quantizeTouchMeNote } from "../config/scales.js";
+
 export class TouchMeMidiInput {
     constructor(eventBus, onSignal = null) {
         this.eventBus = eventBus;
@@ -8,6 +10,7 @@ export class TouchMeMidiInput {
         this.activeNotes = new Map();
         this.lastControllerValue = null;
         this.sensitivity = 1;
+        this.scaleIndex = 0;
         this.visibilityHandler = null;
 
         this.handleMessage = this.handleMessage.bind(this);
@@ -20,6 +23,16 @@ export class TouchMeMidiInput {
         this.sensitivity = Number.isFinite(numeric)
             ? Math.max(0.25, Math.min(3, numeric))
             : 1;
+    }
+
+    setScale(index) {
+        this.scaleIndex = Math.max(
+            0,
+            Math.min(2, Number(index) || 0)
+        );
+
+        this.releaseAll();
+        this.lastIntensity.clear();
     }
 
     async start() {
@@ -131,6 +144,9 @@ export class TouchMeMidiInput {
         }
 
         if (type === 0x90 && data2 > 0) {
+            const mappedNote =
+                quantizeTouchMeNote(data1, this.scaleIndex);
+
             const raw = this.lastIntensity.get(channel);
             const value = clamp01(
                 (raw ?? data2 / 127) * this.sensitivity
@@ -139,13 +155,15 @@ export class TouchMeMidiInput {
             const key = channel + "-" + data1;
 
             this.activeNotes.set(key, {
-                note: data1,
+                note: mappedNote,
+                rawNote: data1,
                 channel
             });
 
             this.eventBus.emit({
                 type: "noteon",
-                note: data1,
+                note: mappedNote,
+                rawNote: data1,
                 velocity: Math.max(0.05, value),
                 channel,
                 source: "touchme",
@@ -156,7 +174,8 @@ export class TouchMeMidiInput {
             this.onSignal?.({
                 type: "note",
                 value,
-                note: data1,
+                note: mappedNote,
+                rawNote: data1,
                 channel
             });
 
@@ -164,11 +183,15 @@ export class TouchMeMidiInput {
         }
 
         if (type === 0x80 || (type === 0x90 && data2 === 0)) {
-            this.activeNotes.delete(channel + "-" + data1);
+            const key = channel + "-" + data1;
+            const active = this.activeNotes.get(key);
+
+            this.activeNotes.delete(key);
 
             this.eventBus.emit({
                 type: "noteoff",
-                note: data1,
+                note: active?.note ?? quantizeTouchMeNote(data1, this.scaleIndex),
+                rawNote: data1,
                 velocity: 0,
                 channel,
                 source: "touchme",
@@ -183,10 +206,11 @@ export class TouchMeMidiInput {
         const active = [...this.activeNotes.values()];
         this.activeNotes.clear();
 
-        for (const { note, channel } of active) {
+        for (const { note, rawNote, channel } of active) {
             this.eventBus.emit({
                 type: "noteoff",
                 note,
+                rawNote,
                 velocity: 0,
                 channel,
                 source: "touchme",
