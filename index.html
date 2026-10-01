@@ -1,77 +1,63 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#080a12">
-<meta name="description" content="Corps Célestes — instrument audiovisuel pour Playtronica TouchMe">
-<title>Corps Célestes · TouchMe</title>
-<link rel="stylesheet" href="./css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Corps Célestes — instrument audiovisuel pour Playtronica TouchMe.">
+    <title>Corps Célestes · TouchMe</title>
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-<main class="app">
-<header>
-<div class="brand">
-<span class="orb"></span>
-<div>
-<p class="eyebrow">INSTRUMENT CORPOREL · PLAYTRONICA</p>
-<h1>Corps Célestes</h1>
-</div>
-</div>
-<button id="connect" class="connect">CONNECTER TOUCHME</button>
-</header>
+    <main class="app">
+        <header class="header">
+            <div class="header-info">
+                <h1>Corps Célestes</h1>
+                <p>Playtronica TouchMe · instrument audiovisuel</p>
+            </div>
 
-<section class="stage">
-<div class="copy">
-<p class="eyebrow">01 / INTERFACE SENSORIELLE</p>
-<h2>Le contact devient<br><em>une constellation.</em></h2>
-<p class="sub">Touchez le capteur. Votre conductivité module le son et le mouvement des astres.</p>
-</div>
-<div class="planet-wrap">
-<div class="orbit orbit-a"></div>
-<div class="orbit orbit-b"></div>
-<div class="planet" id="planet"><div class="planet-core"></div><span class="pulse"></span></div>
-<div class="readout"><span>INTENSITÉ</span><strong id="level">00<span>%</span></strong></div>
-</div>
-</section>
+            <div class="header-actions">
+                <button id="connect" class="text-button" type="button">CONNECTER</button>
+                <button id="audio" class="text-button" type="button">AUDIO</button>
+                <select id="scale" class="scale-control" aria-label="Choisir une gamme">
+                    <option value="0">GAMME · PENTATONIQUE</option>
+                    <option value="1">GAMME · DORIENNE</option>
+                    <option value="2">GAMME · CHROMATIQUE</option>
+                </select>
+            </div>
+        </header>
 
-<section class="panel">
-<div class="status">
-<span id="led" class="led"></span>
-<span id="status">EN ATTENTE DU TOUCHME</span>
-<span class="separator">/</span>
-<span id="device">AUCUN APPAREIL</span>
-</div>
+        <section class="readout" aria-label="État du système">
+            <div class="status-line">
+                <span id="led" class="led"></span>
+                <span id="status">EN ATTENTE DU TOUCHME</span>
+                <span class="separator">/</span>
+                <span id="device">AUCUN APPAREIL</span>
+            </div>
 
-<div class="meters">
-<div class="meter">
-<label>CONDUCTIVITÉ <b id="cc-value">—</b></label>
-<div class="track"><i id="cc-meter"></i></div>
-</div>
-<div class="meter">
-<label>FONDAMENTALE <b id="freq">110 Hz</b></label>
-<div class="track"><i id="freq-meter"></i></div>
-</div>
-</div>
+            <div class="meters">
+                <div class="meter">
+                    <span>TOUCHER</span>
+                    <div class="track"><i id="cc-meter"></i></div>
+                    <b id="cc-value">—</b>
+                </div>
 
-<div class="controls">
-<label for="sensitivity">SENSIBILITÉ <output id="sens-out">1.0×</output></label>
-<input id="sensitivity" type="range" min=".25" max="3" value="1" step=".05">
-<label for="scale">MODE HARMONIQUE</label>
-<select id="scale">
-<option value="0">Pentatonique céleste</option>
-<option value="1">Dorien</option>
-<option value="2">Chromatique</option>
-</select>
-<button id="audio" class="audio">ACTIVER L’AUDIO</button>
-</div>
-</section>
+                <div class="meter">
+                    <span>NOTE</span>
+                    <div class="track"><i id="freq-meter"></i></div>
+                    <b id="freq">—</b>
+                </div>
+            </div>
 
-<footer>
-<span>CORPS CÉLESTES <i>—</i> ÉTUDE DE TOUCHER ET DE RÉSONANCE</span>
-<span>WEB MIDI · WEB AUDIO · CANVAS</span>
-</footer>
-</main>
-<script type="module" src="./js/main.js"></script>
+            <div class="controls">
+                <label for="sensitivity">SENSIBILITÉ <output id="sens-out">1.0×</output></label>
+                <input id="sensitivity" type="range" min=".25" max="3" value="1" step=".05">
+            </div>
+        </section>
+
+        <div id="planet" class="state-proxy" aria-hidden="true"></div>
+        <span id="level" class="level-proxy" aria-hidden="true">0%</span>
+    </main>
+
+    <script type="module" src="./js/main.js"></script>
 </body>
 </html>
