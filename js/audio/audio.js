@@ -206,7 +206,7 @@ export class AudioEngine {
     noteOn(event) {
         if (!this.audioContext || !this.masterGain) return;
 
-        const audioNote = this.harmonizeTouchMeNote(event);
+        const audioNote = event.note;
         const voiceKey =
             Number.isFinite(event.rawNote)
                 ? event.rawNote
@@ -256,20 +256,6 @@ export class AudioEngine {
         this.activeVoices.set(voiceId, voice);
         voice.start();
         this.updateSystemState();
-    }
-
-    harmonizeTouchMeNote(event) {
-        const note = Number(event.note);
-        if (!Number.isFinite(note) || event.source !== "touchme") return note;
-
-        // TouchMe est un geste mélodique, mais son registre MIDI peut varier.
-        // On le replie dans une tessiture grave et dans une palette pentatonique
-        // stable : D, F, G, A, C. L'identité visuelle de la note reste inchangée.
-        const scale = [50, 53, 55, 57, 60, 62, 65, 67, 69, 72];
-        const relative = Math.max(0, Math.round(note - 50));
-        const degree = relative % scale.length;
-        const octave = Math.min(2, Math.floor(relative / scale.length));
-        return Math.min(74, scale[degree] + octave * 12);
     }
 
     updateSystemState() {
