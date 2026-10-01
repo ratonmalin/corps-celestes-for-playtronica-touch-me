@@ -591,17 +591,37 @@ export class VisualEngine {
                 item.lastFrame = now;
                 item.chaotic = true;
             } else {
-                const orbit =
+                // Single bodies keep their current trajectory. The previous
+                // implementation recomputed x/y directly from age, which
+                // caused a discontinuity when a chord collapsed to one note.
+                const targetOrbit =
                     118 -
                     noteProfile * 68 +
                     Math.min(age, 3) * (6 - noteProfile * 2);
 
-                const angle =
+                const targetAngle =
                     item.angle +
                     age * (0.085 + noteProfile * 0.22);
 
-                item.x = baseX + Math.cos(angle) * orbit;
-                item.y = baseY + Math.sin(angle) * orbit * 0.62;
+                const targetX =
+                    baseX + Math.cos(targetAngle) * targetOrbit;
+                const targetY =
+                    baseY + Math.sin(targetAngle) * targetOrbit * 0.62;
+
+                const follow =
+                    Math.min(1, Math.max(0, dt * 1.15));
+
+                item.x += (targetX - item.x) * follow;
+                item.y += (targetY - item.y) * follow;
+
+                // Keep the stored trajectory coherent for a future retrigger.
+                this.bodyPositions.set(item.note, {
+                    x: item.x,
+                    y: item.y,
+                    vx: item.vx,
+                    vy: item.vy
+                });
+
                 item.chaotic = false;
             }
 
