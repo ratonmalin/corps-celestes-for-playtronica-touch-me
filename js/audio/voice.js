@@ -321,7 +321,7 @@ export class Voice {
          */
 
         const attack =
-            this.instrument === "strings" ? 0.55
+            this.instrument === "strings" ? 0.18
                 : this.instrument === "harp" ? 0.004
                 : 0.07;
 
