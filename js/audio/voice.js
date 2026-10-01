@@ -4,11 +4,15 @@ export class Voice {
         audioContext,
         destination,
         reverbInput,
+        delayInput,
+        echoInput,
         { note, velocity }
     ) {
         this.audioContext = audioContext;
         this.destination = destination;
         this.reverbInput = reverbInput;
+        this.delayInput = delayInput;
+        this.echoInput = echoInput;
 
         this.note = note;
         this.velocity = velocity;
@@ -24,6 +28,8 @@ export class Voice {
         this.filter = null;
         this.gain = null;
         this.reverbSend = null;
+        this.delayInput = null;
+        this.echoInput = null;
         this.panner = null;
 
         this.lfo = null;
@@ -334,6 +340,9 @@ export class Voice {
         this.gain.connect(
             this.reverbSend
         );
+
+        this.gain.connect(this.delayInput);
+        this.gain.connect(this.echoInput);
 
         this.reverbSend.connect(
             this.reverbInput
