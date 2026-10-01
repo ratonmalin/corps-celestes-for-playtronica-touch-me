@@ -16,6 +16,7 @@ export class Voice {
 
         this.note = note;
         this.velocity = velocity;
+        this.instrument = "synth";
 
         this.oscillatorA = null;
         this.oscillatorB = null;
@@ -46,6 +47,11 @@ export class Voice {
     }
 
 
+    setInstrument(instrument) {
+        const allowed = ["synth", "strings", "harp"];
+        this.instrument = allowed.includes(instrument) ? instrument : "synth";
+    }
+
     start() {
 
         const context = this.audioContext;
@@ -66,7 +72,10 @@ export class Voice {
         this.oscillatorA =
             context.createOscillator();
 
-        this.oscillatorA.type = "sine";
+        this.oscillatorA.type =
+            this.instrument === "strings" ? "sawtooth"
+            : this.instrument === "harp" ? "triangle"
+            : "sine";
 
         this.oscillatorA.frequency
             .setValueAtTime(
@@ -82,7 +91,10 @@ export class Voice {
         this.oscillatorB =
             context.createOscillator();
 
-        this.oscillatorB.type = "sine";
+        this.oscillatorB.type =
+            this.instrument === "strings" ? "sawtooth"
+            : this.instrument === "harp" ? "sine"
+            : "sine";
 
         this.oscillatorB.frequency
             .setValueAtTime(
@@ -92,7 +104,7 @@ export class Voice {
 
         this.oscillatorB.detune
             .setValueAtTime(
-                5,
+                this.instrument === "strings" ? -7 : 5,
                 now
             );
 
@@ -107,17 +119,23 @@ export class Voice {
         this.oscillatorC =
             context.createOscillator();
 
-        this.oscillatorC.type = "sine";
+        this.oscillatorC.type =
+            this.instrument === "strings" ? "triangle"
+            : this.instrument === "harp" ? "sine"
+            : "sine";
 
         this.oscillatorC.frequency
             .setValueAtTime(
-                frequency * 2,
+                this.instrument === "harp" ? frequency * 2
+                    : frequency * 2,
                 now
             );
 
         this.oscillatorC.detune
             .setValueAtTime(
-                -4,
+                this.instrument === "strings" ? 7
+                    : this.instrument === "harp" ? -3
+                    : -4,
                 now
             );
 
@@ -134,9 +152,16 @@ export class Voice {
         this.oscillatorBGain = context.createGain();
         this.oscillatorCGain = context.createGain();
 
-        this.oscillatorAGain.gain.setValueAtTime(0.72, now);
-        this.oscillatorBGain.gain.setValueAtTime(0.24, now);
-        this.oscillatorCGain.gain.setValueAtTime(0.08, now);
+        const mix =
+            this.instrument === "strings"
+                ? [0.52, 0.34, 0.14]
+                : this.instrument === "harp"
+                    ? [0.68, 0.22, 0.10]
+                    : [0.72, 0.24, 0.08];
+
+        this.oscillatorAGain.gain.setValueAtTime(mix[0], now);
+        this.oscillatorBGain.gain.setValueAtTime(mix[1], now);
+        this.oscillatorCGain.gain.setValueAtTime(mix[2], now);
 
         this.oscillatorA.connect(this.oscillatorAGain);
         this.oscillatorB.connect(this.oscillatorBGain);
@@ -153,8 +178,11 @@ export class Voice {
         this.filter.type = "lowpass";
 
         const filterBase =
-            850 +
-            ((this.note - 48) / 31) * 1050;
+            this.instrument === "strings"
+                ? 1100 + ((this.note - 24) / 36) * 1300
+                : this.instrument === "harp"
+                    ? 1800 + ((this.note - 24) / 36) * 1400
+                    : 850 + ((this.note - 48) / 31) * 1050;
 
         this.filter.frequency
             .setValueAtTime(
@@ -251,7 +279,7 @@ export class Voice {
             context.createGain();
 
         const peakGain =
-            0.095 * this.velocity;
+            (this.instrument === "harp" ? 0.11 : 0.095) * this.velocity;
 
         this.gain.gain
             .setValueAtTime(
@@ -264,13 +292,18 @@ export class Voice {
          * ATTAQUE
          */
 
+        const attack =
+            this.instrument === "strings" ? 0.32
+                : this.instrument === "harp" ? 0.012
+                : 0.07;
+
         this.gain.gain
             .exponentialRampToValueAtTime(
                 Math.max(
                     peakGain,
                     0.0002
                 ),
-                now + 0.07
+                now + attack
             );
 
 
@@ -282,7 +315,7 @@ export class Voice {
             context.createStereoPanner();
 
         const pan =
-            ((this.note - 48) / 31) * 0.5 - 0.25;
+            ((this.note - 24) / 36) * 0.5 - 0.25;
 
         this.panner.pan
             .setValueAtTime(
@@ -300,7 +333,9 @@ export class Voice {
 
         this.reverbSend.gain
             .setValueAtTime(
-                1.15,
+                this.instrument === "strings" ? 1.35
+                    : this.instrument === "harp" ? 1.45
+                    : 1.15,
                 now
             );
 
@@ -483,11 +518,11 @@ export class Voice {
 
         const releaseTime = force
             ? 0.12
-            : heldFor < 0.45
-                ? 1.1
-                : heldFor < 2
-                    ? 1.8
-                    : 2.6;
+            : this.instrument === "strings"
+                ? (heldFor < 0.45 ? 1.8 : heldFor < 2 ? 3.2 : 4.2)
+                : this.instrument === "harp"
+                    ? (heldFor < 0.45 ? 0.8 : heldFor < 2 ? 1.4 : 2.0)
+                    : (heldFor < 0.45 ? 1.1 : heldFor < 2 ? 1.8 : 2.6);
 
         /*
          * RELEASE ADAPTATIF
