@@ -147,12 +147,7 @@ export class TouchMeMidiInput {
             const mappedNote =
                 quantizeTouchMeNote(data1, this.scaleIndex);
 
-            const chordIntervals =
-                this.scaleIndex === 1
-                    ? [0, 3, 7]
-                    : this.scaleIndex === 2
-                        ? [0, 5, 7]
-                        : [0, 4, 7];
+            const chordIntervals = getDiatonicTriadIntervals(mappedNote, this.scaleIndex);
 
             const raw = this.lastIntensity.get(channel);
             const value = clamp01(
@@ -230,4 +225,34 @@ export class TouchMeMidiInput {
 
 function clamp01(value) {
     return Math.max(0, Math.min(1, value));
+}
+
+
+function getDiatonicTriadIntervals(note, scaleIndex) {
+    const scales = [
+        [0, 2, 4, 7, 9],
+        [0, 3, 5, 7, 10],
+        [0, 2, 5, 7, 9]
+    ];
+
+    const scale = scales[Math.max(0, Math.min(2, Number(scaleIndex) || 0))];
+    const pitchClass = ((note - 24) % 12 + 12) % 12;
+    const degree = scale.indexOf(pitchClass);
+
+    if (degree < 0) {
+        return [0, scale[1], scale[2]];
+    }
+
+    const intervals = [];
+    for (let step = 0; step < 3; step++) {
+        const from = degree;
+        const target = degree + step * 2;
+        const octave = Math.floor(target / scale.length);
+        const targetIndex = target % scale.length;
+        const semitone = scale[targetIndex] + octave * 12;
+        const rootSemitone = scale[from];
+        intervals.push(semitone - rootSemitone);
+    }
+
+    return intervals;
 }
