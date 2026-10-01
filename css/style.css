@@ -63,16 +63,16 @@ h1 {
 
 .header-actions {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    align-items: flex-start;
+    gap: 14px;
 }
 
 .text-button,
 .scale-control {
     min-height: 36px;
-    padding: 7px 10px;
+    padding: 7px 0;
     border: 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid transparent;
     border-radius: 0;
     color: rgba(255,255,255,.86);
     background: transparent;
@@ -83,8 +83,27 @@ h1 {
     touch-action: manipulation;
 }
 
+.text-button::after,
+.scale-control::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 1px;
+    margin-top: 7px;
+    background: var(--border);
+}
+
+.text-button:hover::after,
+.text-button:focus-visible::after,
+.scale-control:hover::after,
+.scale-control:focus-visible::after {
+    background: rgba(255,255,255,.55);
+}
+
 .scale-control {
-    width: 230px;
+    width: auto;
+    min-width: 0;
+    max-width: 230px;
     appearance: none;
     text-align: right;
 }
@@ -94,7 +113,6 @@ h1 {
 .scale-control:hover,
 .scale-control:focus-visible {
     color: #fff;
-    border-color: rgba(255,255,255,.55);
     outline: none;
 }
 
@@ -266,7 +284,7 @@ h1 {
         padding: 6px 5px;
         font-size: 9px;
     }
-    .scale-control { width: 170px; }
+    .scale-control { max-width: 170px; }
     .status-bar { top: 62px; right: 16px; gap: 7px; font-size: 9px; }
     .technical {
         left: 16px;
