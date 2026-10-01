@@ -22,7 +22,7 @@ export class AudioEngine {
         this.pendingNotes = new Map();
         this.maxVoices = 16;
         this.started = false;
-        this.volume = 1.7;
+        this.volume = 1;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
@@ -61,7 +61,7 @@ export class AudioEngine {
         const numeric = Number(value);
         this.volume = Number.isFinite(numeric)
             ? Math.max(0, Math.min(2, numeric * 2))
-            : 1.7;
+            : 1;
 
         if (this.masterGain && this.audioContext) {
             const now = this.audioContext.currentTime;
