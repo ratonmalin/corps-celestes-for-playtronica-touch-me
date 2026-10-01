@@ -6,8 +6,7 @@ import { TouchMeMidiInput } from "./input/touchme-midi.js";
 const $ = id => document.getElementById(id);
 const ui = {
     connect: $("connect"), audio: $("audio"), fullscreen: $("fullscreen"), status: $("status"), device: $("device"),
-    led: $("led"), level: $("level"), cc: $("cc-value"), ccMeter: $("cc-meter"),
-    freq: $("freq"), freqMeter: $("freq-meter"), sensitivity: $("sensitivity"),
+    led: $("led"), cc: $("cc-value"), freq: $("freq"), sensitivity: $("sensitivity"),
     sensOut: $("sens-out"), scale: $("scale")
 };
 
@@ -27,13 +26,10 @@ function frequencyForNote(note) {
 function renderSignal(note = null) {
     const sensitivity = Number(ui.sensitivity.value) || 1;
     const effective = clamp(filteredIntensity * sensitivity);
-    ui.level.textContent = Math.round(effective * 100) + "%";
     ui.cc.textContent = midi?.lastControllerValue == null ? "090" : String(Math.round(midi.lastControllerValue)).padStart(3, "0");
-    ui.ccMeter.style.width = effective * 100 + "%";
     const frequency = frequencyForNote(note);
     if (frequency > 0) {
         ui.freq.textContent = Math.round(frequency) + " Hz";
-        ui.freqMeter.style.width = clamp((frequency - 60) / 1000) * 100 + "%";
     }
     ui.led.classList.toggle("on", connected || effective > 0.015);
 }
