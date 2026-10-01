@@ -35,6 +35,12 @@ export class AudioEngine {
         this.delayAmount = 0;
         this.echoAmount = 0;
         this.instrument = "synth";
+        this.arpeggiatorEnabled = false;
+        this.arpeggiatorNotes = new Map();
+        this.arpeggiatorTimer = null;
+        this.arpeggiatorIndex = 0;
+        this.arpeggiatorCurrentId = null;
+        this.arpeggiatorStepMs = 180;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
@@ -57,6 +63,73 @@ export class AudioEngine {
     setInstrument(value) {
         const allowed = ["synth", "strings", "harp"];
         this.instrument = allowed.includes(value) ? value : "synth";
+    }
+
+
+
+    setArpeggiator(enabled) {
+        this.arpeggiatorEnabled = Boolean(enabled);
+        if (!this.arpeggiatorEnabled) {
+            if (this.arpeggiatorTimer !== null) {
+                clearInterval(this.arpeggiatorTimer);
+                this.arpeggiatorTimer = null;
+            }
+            if (this.arpeggiatorCurrentId) {
+                const voice = this.activeVoices.get(this.arpeggiatorCurrentId);
+                if (voice) {
+                    try { voice.release(); } catch {}
+                    this.activeVoices.delete(this.arpeggiatorCurrentId);
+                }
+                this.arpeggiatorCurrentId = null;
+            }
+            this.arpeggiatorNotes.clear();
+            this.arpeggiatorIndex = 0;
+            this.updateSystemState();
+            return;
+        }
+        this.startArpeggiator();
+    }
+
+    startArpeggiator() {
+        if (!this.arpeggiatorEnabled || this.arpeggiatorTimer !== null) return;
+        if (this.arpeggiatorNotes.size === 0) return;
+        this.arpeggiatorStep();
+        this.arpeggiatorTimer = window.setInterval(() => this.arpeggiatorStep(), this.arpeggiatorStepMs);
+    }
+
+    arpeggiatorStep() {
+        if (!this.arpeggiatorEnabled || this.arpeggiatorNotes.size === 0) {
+            if (this.arpeggiatorTimer !== null) {
+                clearInterval(this.arpeggiatorTimer);
+                this.arpeggiatorTimer = null;
+            }
+            if (this.arpeggiatorCurrentId) {
+                const voice = this.activeVoices.get(this.arpeggiatorCurrentId);
+                if (voice) {
+                    try { voice.release(); } catch {}
+                    this.activeVoices.delete(this.arpeggiatorCurrentId);
+                }
+                this.arpeggiatorCurrentId = null;
+                this.updateSystemState();
+            }
+            return;
+        }
+
+        if (this.arpeggiatorCurrentId) {
+            const previous = this.activeVoices.get(this.arpeggiatorCurrentId);
+            if (previous) {
+                try { previous.release(); } catch {}
+                this.activeVoices.delete(this.arpeggiatorCurrentId);
+            }
+        }
+
+        const notes = [...this.arpeggiatorNotes.values()].sort((a, b) => a.note - b.note);
+        const event = notes[this.arpeggiatorIndex % notes.length];
+        this.arpeggiatorIndex = (this.arpeggiatorIndex + 1) % notes.length;
+
+        const id = "arp-" + event.source + "-" + event.channel + "-" + event.note;
+        this.noteOn(event, id);
+        this.arpeggiatorCurrentId = id;
     }
 
     setVolume(value) {
@@ -243,16 +316,30 @@ export class AudioEngine {
             return;
         }
 
+        if (this.arpeggiatorEnabled) {
+            const key = event.source + "-" + event.channel + "-" +
+                (Number.isFinite(event.rawNote) ? event.rawNote : event.note);
+
+            if (event.type === "noteon") {
+                this.arpeggiatorNotes.set(key, event);
+                this.startArpeggiator();
+            } else {
+                this.arpeggiatorNotes.delete(key);
+                if (this.arpeggiatorNotes.size === 0) this.arpeggiatorStep();
+            }
+            return;
+        }
+
         if (event.type === "noteon") this.noteOn(event);
         if (event.type === "noteoff") this.noteOff(event);
     }
 
-    noteOn(event) {
+    noteOn(event, forcedVoiceId = null) {
         if (!this.audioContext || !this.masterGain) return;
 
         const audioNote = event.note;
         const voiceKey = Number.isFinite(event.rawNote) ? event.rawNote : event.note;
-        const voiceId = `${event.source}-${event.channel}-${voiceKey}`;
+        const voiceId = forcedVoiceId || (event.source + "-" + event.channel + "-" + voiceKey);
 
         if (this.activeVoices.has(voiceId)) return;
 
@@ -315,6 +402,13 @@ export class AudioEngine {
     }
 
     panic() {
+        if (this.arpeggiatorTimer !== null) {
+            clearInterval(this.arpeggiatorTimer);
+            this.arpeggiatorTimer = null;
+        }
+        this.arpeggiatorNotes.clear();
+        this.arpeggiatorCurrentId = null;
+        this.arpeggiatorIndex = 0;
         this.pendingNotes.clear();
         for (const voice of this.activeVoices.values()) {
             try { voice.release(true); }
