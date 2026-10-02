@@ -269,6 +269,13 @@ export class AudioEngine {
         }
 
         this.started = true;
+
+        // Warm the acoustic string buffers in the background. Do not await this:
+        // the AudioContext must become usable immediately and noteOn must not
+        // be delayed by network or decode work.
+        loadStringSamples(this.audioContext).catch(error => {
+            console.warn("[AUDIO] String sample preload failed:", error);
+        });
     }
 
     createReverb() {
