@@ -36,7 +36,7 @@ export class AudioEngine {
         this.pendingNotes = new Map();
         this.maxVoices = 16;
         this.started = false;
-        this.volume = 1;
+        this.volume = 2;
         this.reverbAmount = 2;
         this.delayAmount = 0;
         this.echoAmount = 0;
@@ -185,7 +185,7 @@ export class AudioEngine {
     setVolume(value) {
         const numeric = Number(value);
         this.volume = Number.isFinite(numeric)
-            ? Math.max(0, Math.min(2, numeric * 2))
+            ? Math.max(0, Math.min(4, numeric * 4))
             : 1;
 
         if (this.masterGain && this.audioContext) {
