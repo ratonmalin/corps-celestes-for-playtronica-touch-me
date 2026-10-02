@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-39";
+import { AudioEngine } from "./audio/audio.js?v=20261002-51";
 import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-45";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 import { MobileTouchInput } from "./input/mobile-touch.js";
@@ -232,12 +232,15 @@ async function boot() {
 
     midi.setSensitivity(sensitivity);
     midi.setScale(scaleIndex);
-    await midi.start();
-
+    // Start the local touch instrument before attempting MIDI. On mobile,
+    // Web MIDI may be unavailable or may wait for a permission response;
+    // touch input must never depend on that asynchronous path.
     mobileTouch = new MobileTouchInput(eventBus);
     mobileTouch.setSensitivity(sensitivity);
     mobileTouch.setScale(scaleIndex);
     mobileTouch.start();
+
+    await midi.start();
 
     const retry = () => {
         if (!midi.input) {
