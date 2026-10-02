@@ -21,6 +21,7 @@ export class AudioEngine {
         this.audioContext = null;
         this.masterGain = null;
         this.compressor = null;
+        this.limiter = null;
         this.reverbInput = null;
         this.reverb = null;
         this.reverbGain = null;
@@ -247,17 +248,29 @@ export class AudioEngine {
             this.masterGain.gain.value = this.volume;
 
             this.compressor = this.audioContext.createDynamicsCompressor();
-            this.compressor.threshold.value = -24;
-            this.compressor.knee.value = 30;
-            this.compressor.ratio.value = 1.5;
-            this.compressor.attack.value = 0.08;
-            this.compressor.release.value = 1.2;
+            this.compressor.threshold.value = -18;
+            this.compressor.knee.value = 18;
+            this.compressor.ratio.value = 3;
+            this.compressor.attack.value = 0.012;
+            this.compressor.release.value = 0.18;
+
+            // Final safety stage: the instrument voices and effect returns can
+            // legitimately sum above 0 dBFS, especially on dense chords.
+            // Keep the musical dynamics in the compressor, then hard-limit
+            // only the final bus so individual instruments cannot clip.
+            this.limiter = this.audioContext.createDynamicsCompressor();
+            this.limiter.threshold.value = -2;
+            this.limiter.knee.value = 0;
+            this.limiter.ratio.value = 20;
+            this.limiter.attack.value = 0.001;
+            this.limiter.release.value = 0.08;
 
             this.createReverb();
             this.createDelayEffects();
 
             this.masterGain.connect(this.compressor);
-            this.compressor.connect(this.audioContext.destination);
+            this.compressor.connect(this.limiter);
+            this.limiter.connect(this.audioContext.destination);
         }
 
         if (this.audioContext.state === "suspended") {
