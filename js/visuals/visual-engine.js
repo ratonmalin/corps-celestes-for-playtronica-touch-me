@@ -919,22 +919,25 @@ export class VisualEngine {
     }
 
     drawIdle(now) {
-        const idle = now - this.lastInteraction > 15000;
+        const hasHeldBody = [...this.active.values()]
+            .some(item => !item.releasedAt);
+
+        // Idle means no musical activity, not merely no recent event.
+        const idle =
+            !hasHeldBody &&
+            now - this.lastInteraction > 15000;
+
+        const root = document.documentElement;
         const idleMessage = document.getElementById("idle-message");
         const idleMessageText = document.getElementById("idle-message-text");
         const idleHands = document.getElementById("idle-hands");
 
+        root.classList.toggle("is-idle", idle);
+
         if (!idle) {
             this.sleepCycle = -1;
-
-            if (idleMessage) {
-                idleMessage.classList.remove("visible");
-            }
-
-            if (idleHands) {
-                idleHands.classList.remove("visible");
-            }
-
+            idleMessage?.classList.remove("visible");
+            idleHands?.classList.remove("visible");
             return false;
         }
 
@@ -956,14 +959,8 @@ export class VisualEngine {
             }
         }
 
-        if (idleMessage) {
-            idleMessage.classList.add("visible");
-        }
-
-        if (idleHands) {
-            idleHands.classList.add("visible");
-        }
-
+        idleMessage?.classList.add("visible");
+        idleHands?.classList.add("visible");
         return true;
     }
 
