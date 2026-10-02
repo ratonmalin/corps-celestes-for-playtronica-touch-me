@@ -37,7 +37,8 @@ export class VisualEngine {
         this.canvas = document.createElement("canvas");
         this.canvas.className = "visual-field";
         this.canvas.setAttribute("aria-hidden", "true");
-        document.body.prepend(this.canvas);
+        const app = document.querySelector(".app");
+        (app || document.body).prepend(this.canvas);
 
         this.ctx = this.canvas.getContext("2d");
         this.resize();
