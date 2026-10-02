@@ -622,7 +622,7 @@ export class VisualEngine {
             if (item.releasedAt) {
                 const releaseAge =
                     Math.max(0, (now - item.releasedAt) / 1000);
-                const releaseDuration = 2.2;
+                const releaseDuration = 6.0;
                 const releaseProgress =
                     Math.min(1, releaseAge / releaseDuration);
 
@@ -1036,7 +1036,7 @@ export class VisualEngine {
 
                 const style = this.getVisualStyle();
                 const maxTrailAge = item.releasedAt
-                    ? 5.2 * style.trail
+                    ? 10 * style.trail
                     : 8 * style.trail;
 
                 item.trail = item.trail.filter(
