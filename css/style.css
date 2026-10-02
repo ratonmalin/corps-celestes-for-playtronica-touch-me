@@ -106,9 +106,9 @@ h1 {
 }
 
 .scale-control {
-    width: 250px;
+    width: 300px;
     min-width: 0;
-    max-width: 250px;
+    max-width: 300px;
     appearance: none;
     text-align: right;
 }
@@ -342,8 +342,8 @@ h1 {
         font-size: 9px;
     }
     .scale-control { max-width: none; }
-    #instrument { width: 140px; }
-    #scale { width: 190px; }
+    #instrument { width: 200px; }
+    #scale { width: 230px; }
     .status-bar { top: 62px; right: 16px; gap: 7px; font-size: 9px; }
     .technical {
         left: 16px;
