@@ -156,52 +156,28 @@ h1 {
 
 .led.on { background: var(--accent); }
 
-.effect-controls {
+.effect-panel {
     position: fixed;
     left: 36px;
     bottom: 38px;
     z-index: 30;
     display: flex;
-    align-items: flex-end;
-    gap: 18px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
     pointer-events: auto;
 }
 
-.effect-slider {
-    width: 92px;
-    display: grid;
-    grid-template-columns: auto auto;
-    align-items: center;
-    column-gap: 8px;
-    row-gap: 4px;
-    color: rgba(255,255,255,.48);
-    font-family: "Roboto", system-ui, sans-serif;
-    font-size: 8px;
-    font-weight: 300;
-    letter-spacing: .08em;
-    user-select: none;
+.instrument-control {
+    width: 300px;
+    max-width: 300px;
 }
 
-.effect-slider span {
-    grid-column: 1;
-}
-
-.effect-slider output {
-    grid-column: 2;
-    margin: 0;
-    color: rgba(255,255,255,.72);
-    font-weight: 300;
-    text-align: right;
-}
-
-.effect-slider input {
-    grid-column: 1 / -1;
-    width: 92px;
-    height: 14px;
-    margin: 0;
-    accent-color: var(--accent);
-    cursor: pointer;
-    touch-action: auto;
+.effect-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    pointer-events: auto;
 }
 
 .technical {
@@ -325,7 +301,9 @@ h1 {
     .app { padding: 24px 24px 100px; }
     .status-bar { top: 67px; right: 24px; font-size: 10px; }
     .technical { right: 24px; gap: 14px; font-size: 11px; }
-    .effect-controls { left: 24px; bottom: 34px; gap: 14px; }
+    .effect-panel { left: 24px; bottom: 34px; }
+    .instrument-control { width: 260px; max-width: 260px; }
+    .effect-controls { gap: 14px; }
 }
 
 @media (max-width: 700px) {
@@ -354,22 +332,15 @@ h1 {
     }
     .technical span:first-child { display: none; }
     .technical input { width: 64px; }
-    .effect-controls { left: 16px; bottom: 86px; gap: 10px; }
+    .effect-panel { left: 16px; bottom: 86px; }
+    .instrument-control { width: 230px; max-width: 230px; }
+    .effect-controls { gap: 10px; }
 }
 
 @media (max-width: 480px) {
     .status-bar { top: 59px; right: 16px; font-size: 8px; }
     .technical { bottom: 38px; gap: 8px; }
     .technical input { width: 58px; }
-    .effect-controls { left: 16px; bottom: 82px; }
+    .effect-panel { left: 16px; bottom: 82px; }
 }
 
-
-.idle-field {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-}
