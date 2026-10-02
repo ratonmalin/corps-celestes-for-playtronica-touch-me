@@ -42,16 +42,6 @@ export class AudioEngine {
         this.delayAmount = 0;
         this.echoAmount = 0;
         this.instrument = "synth";
-        this.arpeggiatorEnabled = false;
-        this.arpeggiatorNotes = new Map();
-        this.arpeggiatorTimer = null;
-        this.arpeggiatorScheduler = null;
-        this.arpeggiatorNextTime = 0;
-        this.arpeggiatorIndex = 0;
-        this.arpeggiatorCurrentId = null;
-        this.arpeggiatorStepMs = 680;
-        this.arpeggiatorLookaheadMs = 25;
-        this.arpeggiatorScheduleAhead = 0.12;
 
         this.handleEvent = this.handleEvent.bind(this);
         this.handleUserGesture = this.handleUserGesture.bind(this);
@@ -83,105 +73,6 @@ export class AudioEngine {
     }
 
 
-
-    setArpeggiator(enabled) {
-        this.arpeggiatorEnabled = Boolean(enabled);
-        if (!this.arpeggiatorEnabled) {
-            if (this.arpeggiatorTimer !== null) {
-                clearInterval(this.arpeggiatorTimer);
-                this.arpeggiatorTimer = null;
-            }
-            if (this.arpeggiatorScheduler !== null) {
-                clearInterval(this.arpeggiatorScheduler);
-                this.arpeggiatorScheduler = null;
-            }
-            if (this.arpeggiatorCurrentId) {
-                const voice = this.activeVoices.get(this.arpeggiatorCurrentId);
-                if (voice) {
-                    try { voice.release(); } catch {}
-                    this.activeVoices.delete(this.arpeggiatorCurrentId);
-                }
-                this.arpeggiatorCurrentId = null;
-            }
-            const heldNotes = [...this.arpeggiatorNotes.values()];
-            this.arpeggiatorNotes.clear();
-            this.arpeggiatorIndex = 0;
-
-            // Turning the arp off should not interrupt physically held notes.
-            for (const event of heldNotes) {
-                this.noteOn(event);
-            }
-
-            this.updateSystemState();
-            return;
-        }
-        this.startArpeggiator();
-    }
-
-    startArpeggiator() {
-        if (!this.arpeggiatorEnabled || this.arpeggiatorTimer !== null) return;
-        if (this.arpeggiatorNotes.size === 0) return;
-        this.arpeggiatorNextTime = this.audioContext?.currentTime ?? 0;
-        this.scheduleArpeggiator();
-        this.arpeggiatorScheduler = window.setInterval(
-            () => this.scheduleArpeggiator(),
-            this.arpeggiatorLookaheadMs
-        );
-    }
-
-    scheduleArpeggiator() {
-        if (!this.arpeggiatorEnabled || this.arpeggiatorNotes.size === 0 || !this.audioContext) {
-            return;
-        }
-
-        const now = this.audioContext.currentTime;
-        while (this.arpeggiatorNextTime < now + this.arpeggiatorScheduleAhead) {
-            this.arpeggiatorStep();
-            this.arpeggiatorNextTime += this.arpeggiatorStepMs / 1000;
-        }
-    }
-
-    arpeggiatorStep() {
-        if (!this.arpeggiatorEnabled || this.arpeggiatorNotes.size === 0) {
-            if (this.arpeggiatorTimer !== null) {
-                clearInterval(this.arpeggiatorTimer);
-                this.arpeggiatorTimer = null;
-            }
-            if (this.arpeggiatorCurrentId) {
-                const voice = this.activeVoices.get(this.arpeggiatorCurrentId);
-                if (voice) {
-                    try { voice.release(); } catch {}
-                    this.activeVoices.delete(this.arpeggiatorCurrentId);
-                }
-                this.arpeggiatorCurrentId = null;
-                this.updateSystemState();
-            }
-            return;
-        }
-
-        if (this.arpeggiatorCurrentId) {
-            const previous = this.activeVoices.get(this.arpeggiatorCurrentId);
-            if (previous) {
-                try { previous.release(); } catch {}
-                this.activeVoices.delete(this.arpeggiatorCurrentId);
-            }
-        }
-
-        const notes = [...this.arpeggiatorNotes.values()].sort((a, b) => a.note - b.note);
-        const root = notes[this.arpeggiatorIndex % notes.length];
-        this.arpeggiatorIndex = (this.arpeggiatorIndex + 1) % notes.length;
-
-        const id = "arp-" + root.source + "-" + root.channel + "-" + root.note;
-        this.noteOn(
-            {
-                ...root,
-                velocity: Math.min(1, (root.velocity ?? 1) * 0.82),
-                chord: true
-            },
-            id
-        );
-        this.arpeggiatorCurrentId = id;
-    }
 
     setVolume(value) {
         const numeric = Number(value);
@@ -379,33 +270,12 @@ export class AudioEngine {
                 for (const [key, pendingEvent] of this.pendingNotes) {
                     this.pendingNotes.delete(key);
                     if (pendingEvent.type === "noteon") {
-                        if (this.arpeggiatorEnabled) {
-                            const key = pendingEvent.source + "-" + pendingEvent.channel + "-" +
-                                (Number.isFinite(pendingEvent.rawNote) ? pendingEvent.rawNote : pendingEvent.note);
-                            this.arpeggiatorNotes.set(key, pendingEvent);
-                        } else {
-                            this.noteOn(pendingEvent);
-                        }
+                        this.noteOn(pendingEvent);
                     }
                 }
-                if (this.arpeggiatorEnabled) this.startArpeggiator();
             }).catch(error => {
                 console.warn("[AUDIO] Waiting for user interaction:", error);
             });
-            return;
-        }
-
-        if (this.arpeggiatorEnabled) {
-            const key = event.source + "-" + event.channel + "-" +
-                (Number.isFinite(event.rawNote) ? event.rawNote : event.note);
-
-            if (event.type === "noteon") {
-                this.arpeggiatorNotes.set(key, event);
-                this.startArpeggiator();
-            } else {
-                this.arpeggiatorNotes.delete(key);
-                if (this.arpeggiatorNotes.size === 0) this.arpeggiatorStep();
-            }
             return;
         }
 
@@ -493,13 +363,6 @@ export class AudioEngine {
     }
 
     panic() {
-        if (this.arpeggiatorTimer !== null) {
-            clearInterval(this.arpeggiatorTimer);
-            this.arpeggiatorTimer = null;
-        }
-        this.arpeggiatorNotes.clear();
-        this.arpeggiatorCurrentId = null;
-        this.arpeggiatorIndex = 0;
         this.pendingNotes.clear();
         for (const voice of this.activeVoices.values()) {
             try { voice.release(true); }
