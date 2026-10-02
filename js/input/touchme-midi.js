@@ -8,7 +8,6 @@ export class TouchMeMidiInput {
         this.input = null;
         this.lastIntensity = new Map();
         this.activeNotes = new Map();
-        this.lastControllerValue = null;
         this.sensitivity = 1;
         this.scaleIndex = 0;
         this.visibilityHandler = null;
@@ -131,15 +130,6 @@ export class TouchMeMidiInput {
             const value = data2 / 127;
 
             this.lastIntensity.set(channel, value);
-            this.lastControllerValue = data2;
-
-            this.onSignal?.({
-                type: "intensity",
-                value: clamp01(value * this.sensitivity),
-                controller: 90,
-                channel
-            });
-
             return;
         }
 
