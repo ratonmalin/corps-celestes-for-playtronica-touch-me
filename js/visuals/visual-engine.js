@@ -601,8 +601,11 @@ export class VisualEngine {
             }
 
             if (item.releasedAt) {
+                const releaseAge =
+                    Math.max(0, (now - item.releasedAt) / 1000);
+                const releaseDuration = 2.2;
                 const releaseProgress =
-                    Math.min(1, (now - item.releasedAt) / 4.2);
+                    Math.min(1, releaseAge / releaseDuration);
 
                 item.releaseLife =
                     1 -
@@ -943,6 +946,10 @@ export class VisualEngine {
             trailReveal * trailReveal * (3 - 2 * trailReveal);
 
         for (const item of items) {
+            if (item.releasedAt && (item.releaseLife ?? 0) <= 0) {
+                continue;
+            }
+
             const holdAge = !item.releasedAt
                 ? Math.max(0, (now - item.born) / 1000)
                 : 0;
