@@ -899,6 +899,8 @@ export class VisualEngine {
             ctx.lineWidth = 0.9;
             ctx.stroke();
         }
+
+        return idle;
     }
 
     indexHue(phase) {
@@ -1420,6 +1422,8 @@ export class VisualEngine {
 
         // Idle rendering is isolated from the main visual canvas. This means
         // the idle prompt remains visible even if a main-canvas effect fails.
+        let isIdle = false;
+
         try {
             if (this.idleCtx) {
                 const ratio = Math.min(
@@ -1427,8 +1431,14 @@ export class VisualEngine {
                     2
                 );
                 this.idleCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                this.idleCtx.globalAlpha = 1;
+                this.idleCtx.globalCompositeOperation = "source-over";
                 this.idleCtx.clearRect(0, 0, innerWidth, innerHeight);
-                this.drawIdle(this.idleCtx, now);
+                isIdle = this.drawIdle(this.idleCtx, now);
+
+                if (isIdle) {
+                    this.drawMemory(this.idleCtx, now);
+                }
             }
         } catch (error) {
             if (now - this.lastFrameError > 2000) {
@@ -1448,7 +1458,11 @@ export class VisualEngine {
             ctx.clearRect(0, 0, innerWidth, innerHeight);
 
             this.updateActiveBodies(now);
-            this.drawMemory(ctx, now);
+
+            if (!isIdle) {
+                this.drawMemory(ctx, now);
+            }
+
             this.drawActiveBodies(ctx, now);
 
             this.lastFrameError = 0;
