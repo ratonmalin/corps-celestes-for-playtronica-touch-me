@@ -38,7 +38,7 @@ export class AudioEngine {
         this.echoCompressor = null;
         this.activeVoices = new Map();
         this.pendingNotes = new Map();
-        this.maxVoices = 12;
+        this.maxVoices = 8;
         this.started = false;
         this.volume = 0.5;
         this.reverbAmount = 2;
