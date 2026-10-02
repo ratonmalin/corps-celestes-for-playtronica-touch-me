@@ -250,6 +250,13 @@ h1 {
     font-weight: 400;
 }
 
+#freq {
+    display: inline-block;
+    min-width: 7ch;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 .technical label {
     display: flex;
     align-items: center;
@@ -384,7 +391,6 @@ h1 {
     h1 { font-size: 19px; }
     .header p { font-size: 11px; }
     .header-actions {
-        grid-template-columns: repeat(2, max-content);
         gap: 4px 12px;
     }
     .text-button, .scale-control {
