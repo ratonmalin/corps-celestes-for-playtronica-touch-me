@@ -342,8 +342,8 @@ h1 {
         font-size: 9px;
     }
     .scale-control { max-width: none; }
-    #instrument { width: 210px; }
-    #scale { width: 250px; }
+    #instrument { width: 140px; }
+    #scale { width: 190px; }
     .status-bar { top: 62px; right: 16px; gap: 7px; font-size: 9px; }
     .technical {
         left: 16px;
