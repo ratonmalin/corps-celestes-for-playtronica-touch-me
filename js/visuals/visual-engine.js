@@ -758,6 +758,7 @@ export class VisualEngine {
         const idle = now - this.lastInteraction > 30000;
         const idleMessage = document.getElementById("idle-message");
         const idleMessageText = document.getElementById("idle-message-text");
+        const idleHands = document.getElementById("idle-hands");
 
         const elapsed = (now - this.lastInteraction) / 1000;
         const sleepElapsed = Math.max(0, elapsed - 30);
@@ -769,6 +770,9 @@ export class VisualEngine {
 
             if (idleMessage) {
                 idleMessage.classList.remove("visible");
+            }
+            if (idleHands) {
+                idleHands.classList.remove("visible");
             }
         } else if (this.sleepCycle === -1) {
             this.sleepCycle = 0;
@@ -790,8 +794,14 @@ export class VisualEngine {
             if (idleMessage) {
                 idleMessage.classList.add("visible");
             }
+            if (idleHands) {
+                idleHands.classList.add("visible");
+            }
         } else if (idleMessage) {
             idleMessage.classList.add("visible");
+            if (idleHands) {
+                idleHands.classList.add("visible");
+            }
         }
 
         const elapsedAbsolute = now / 1000;
