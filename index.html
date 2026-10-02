@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Corps Célestes · instrument musical expérimental pour Playtronica TouchMe.">
     <title>Corps Célestes</title>
-    <link rel="stylesheet" href="./css/style.css?v=20261002-42">
+    <link rel="stylesheet" href="./css/style.css?v=20261002-43">
 </head>
 <body autocomplete="off">
     <main class="app">
@@ -17,28 +17,25 @@
         <header class="header">
             <div class="header-info">
                 <h1>Corps Célestes</h1>
-                <p>Playtronica TouchMe · Camille Grigaut</p>
+                <p></p>
             </div>
 
             <div class="header-actions">
-                <select id="scale" class="scale-control" aria-label="Changer de gamme">
-                    <option value="0">GAMME · PENTATONIQUE MAJEURE</option>
-                    <option value="1">GAMME · PENTATONIQUE MINEURE</option>
-                    <option value="2">GAMME · SUSPENDUE</option>
-                </select>
-                <button id="arpeggiator" class="text-button" type="button">ARPÉGIATEUR · OFF</button>
                 <button id="fullscreen" class="text-button" type="button">FULL SCREEN</button>
             </div>
         </header>
 
-        <div class="status-bar">
+        <div class="status-bar" aria-live="polite">
             <span id="led" class="led"></span>
-            <span id="status">EN ATTENTE</span>
-            <span class="separator">/</span>
-            <span id="device">AUCUN APPAREIL</span>
+            <span id="status">CAPTEUR CONNECTÉ</span>
         </div>
 
         <div class="effect-panel">
+            <select id="scale" class="scale-control" aria-label="Changer de gamme">
+                <option value="0">GAMME · PENTATONIQUE MAJEURE</option>
+                <option value="1">GAMME · PENTATONIQUE MINEURE</option>
+                <option value="2">GAMME · SUSPENDUE</option>
+            </select>
             <button id="instrument" class="text-button instrument-control" type="button" aria-label="Changer d'instrument">INSTRUMENT · SYNTHÉTIQUE</button>
             <div class="effect-controls" aria-label="Effets audio">
             <label class="effect-slider">
@@ -75,6 +72,6 @@
         </div>
     </main>
 
-    <script type="module" src="./js/main.js?v=20261002-46"></script>
+    <script type="module" src="./js/main.js?v=20261002-47"></script>
 </body>
 </html>
