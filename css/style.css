@@ -106,9 +106,9 @@ h1 {
 }
 
 .scale-control {
-    width: auto;
+    width: 250px;
     min-width: 0;
-    max-width: 230px;
+    max-width: 250px;
     appearance: none;
     text-align: right;
 }
