@@ -38,9 +38,9 @@ export class AudioEngine {
         this.echoCompressor = null;
         this.activeVoices = new Map();
         this.pendingNotes = new Map();
-        this.maxVoices = 16;
+        this.maxVoices = 12;
         this.started = false;
-        this.volume = 2;
+        this.volume = 0.5;
         this.reverbAmount = 2;
         this.delayAmount = 0;
         this.echoAmount = 0;
@@ -79,9 +79,11 @@ export class AudioEngine {
 
     setVolume(value) {
         const numeric = Number(value);
+        // The UI is already a 0..1 control. Do not amplify the master bus:
+        // mapping 50% to +6 dB was the main source of persistent clipping.
         this.volume = Number.isFinite(numeric)
-            ? Math.max(0, Math.min(4, numeric * 4))
-            : 1;
+            ? Math.max(0, Math.min(1, numeric))
+            : 0.5;
 
         if (this.masterGain && this.audioContext) {
             const now = this.audioContext.currentTime;
@@ -153,11 +155,11 @@ export class AudioEngine {
             // Keep the musical dynamics in the compressor, then hard-limit
             // only the final bus so individual instruments cannot clip.
             this.limiter = this.audioContext.createDynamicsCompressor();
-            this.limiter.threshold.value = -4;
+            this.limiter.threshold.value = -6;
             this.limiter.knee.value = 0;
-            this.limiter.ratio.value = 20;
+            this.limiter.ratio.value = 100;
             this.limiter.attack.value = 0.001;
-            this.limiter.release.value = 0.12;
+            this.limiter.release.value = 0.08;
 
             this.createReverb();
             this.createDelayEffects();
