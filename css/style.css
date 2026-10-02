@@ -171,6 +171,7 @@ h1 {
 .instrument-control {
     width: 300px;
     max-width: 300px;
+    text-align: left;
 }
 
 .effect-controls {
@@ -320,7 +321,7 @@ h1 {
         font-size: 9px;
     }
     .scale-control { max-width: none; }
-    #instrument { width: 200px; }
+    #instrument { width: 200px; text-align: left; }
     #scale { width: 230px; }
     .status-bar { top: 62px; right: 16px; gap: 7px; font-size: 9px; }
     .technical {
@@ -333,7 +334,7 @@ h1 {
     .technical span:first-child { display: none; }
     .technical input { width: 64px; }
     .effect-panel { left: 16px; bottom: 86px; }
-    .instrument-control { width: 230px; max-width: 230px; }
+    .instrument-control { width: 230px; max-width: 230px; text-align: left; }
     .effect-controls { gap: 10px; }
 }
 
