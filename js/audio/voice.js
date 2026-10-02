@@ -35,9 +35,11 @@ export class Voice {
         this.oscillatorCGain = null;
 
         this.filter = null;
+        this.saturation = null;
         this.gain = null;
         this.reverbSend = null;
         this.panner = null;
+        this.saturation = null;
 
         this.lfo = null;
         this.lfoGain = null;
@@ -96,10 +98,17 @@ export class Voice {
         this.oscillatorA =
             context.createOscillator();
 
-        this.oscillatorA.type =
-            this.instrument === "strings" ? "triangle"
-            : this.instrument === "harp" ? "triangle"
-            : "sine";
+        this.oscillatorA.type = "sine";
+
+        if (this.instrument === "synth") {
+            this.oscillatorA.setPeriodicWave(
+                this.createPeriodicWave(context, [0, 1, 0.34, 0.18, 0.09, 0.045, 0.025])
+            );
+        } else if (this.instrument === "harp") {
+            this.oscillatorA.setPeriodicWave(
+                this.createPeriodicWave(context, [0, 1, 0.16, 0.055, 0.02, 0.008])
+            );
+        }
 
         this.oscillatorA.frequency
             .setValueAtTime(
@@ -115,10 +124,17 @@ export class Voice {
         this.oscillatorB =
             context.createOscillator();
 
-        this.oscillatorB.type =
-            this.instrument === "strings" ? "sawtooth"
-            : this.instrument === "harp" ? "sine"
-            : "sine";
+        this.oscillatorB.type = "sine";
+
+        if (this.instrument === "synth") {
+            this.oscillatorB.setPeriodicWave(
+                this.createPeriodicWave(context, [0, 0.22, 1, 0.28, 0.12, 0.055])
+            );
+        } else if (this.instrument === "harp") {
+            this.oscillatorB.setPeriodicWave(
+                this.createPeriodicWave(context, [0, 0.08, 1, 0.12, 0.035])
+            );
+        }
 
         this.oscillatorB.frequency
             .setValueAtTime(
@@ -128,7 +144,7 @@ export class Voice {
 
         this.oscillatorB.detune
             .setValueAtTime(
-                this.instrument === "strings" ? -2 : 5,
+                this.instrument === "strings" ? -2 : 2.5,
                 now
             );
 
@@ -143,10 +159,17 @@ export class Voice {
         this.oscillatorC =
             context.createOscillator();
 
-        this.oscillatorC.type =
-            this.instrument === "strings" ? "triangle"
-            : this.instrument === "harp" ? "sine"
-            : "sine";
+        this.oscillatorC.type = "sine";
+
+        if (this.instrument === "synth") {
+            this.oscillatorC.setPeriodicWave(
+                this.createPeriodicWave(context, [0, 0.04, 0.18, 1, 0.12, 0.05])
+            );
+        } else if (this.instrument === "harp") {
+            this.oscillatorC.setPeriodicWave(
+                this.createPeriodicWave(context, [0, 0.03, 0.1, 1, 0.08])
+            );
+        }
 
         this.oscillatorC.frequency
             .setValueAtTime(
@@ -159,8 +182,8 @@ export class Voice {
         this.oscillatorC.detune
             .setValueAtTime(
                 this.instrument === "strings" ? 2
-                    : this.instrument === "harp" ? -3
-                    : -4,
+                    : this.instrument === "harp" ? -2
+                    : -2.5,
                 now
             );
 
@@ -330,7 +353,35 @@ export class Voice {
         const attack =
             this.instrument === "strings" ? 0.18
                 : this.instrument === "harp" ? 0.004
-                : 0.07;
+                : 0.035;
+
+        const filterAttack =
+            this.instrument === "harp" ? 0.025
+                : this.instrument === "strings" ? 0.22
+                : 0.09;
+
+        const filterPeak = Math.min(
+            this.instrument === "harp" ? 3100 : 2500,
+            Math.max(
+                this.instrument === "harp" ? 1900 : 1100,
+                this.filter.frequency.value * (
+                    this.instrument === "strings" ? 1.35 : 1.6
+                )
+            )
+        );
+
+        this.filter.frequency.exponentialRampToValueAtTime(
+            filterPeak,
+            now + filterAttack
+        );
+
+        this.filter.frequency.exponentialRampToValueAtTime(
+            Math.max(
+                650,
+                this.instrument === "harp" ? 2050 : 1250
+            ),
+            now + (this.instrument === "harp" ? 0.55 : 0.9)
+        );
 
         this.gain.gain
             .exponentialRampToValueAtTime(
@@ -405,9 +456,8 @@ export class Voice {
         this.oscillatorBGain.connect(this.filter);
         this.oscillatorCGain.connect(this.filter);
 
-        this.filter.connect(
-            this.gain
-        );
+        this.filter.connect(this.saturation);
+        this.saturation.connect(this.gain);
 
 
         /*
@@ -459,6 +509,32 @@ export class Voice {
         );
     }
 
+
+    createPeriodicWave(context, harmonics) {
+        const real = new Float32Array(harmonics.length);
+        const imag = new Float32Array(harmonics.length);
+
+        for (let index = 1; index < harmonics.length; index++) {
+            imag[index] = Number(harmonics[index]) || 0;
+        }
+
+        return context.createPeriodicWave(real, imag, {
+            disableNormalization: false
+        });
+    }
+
+    createSoftSaturationCurve(amount = 0.12) {
+        const size = 1024;
+        const curve = new Float32Array(size);
+        const drive = 1 + Math.max(0, amount) * 8;
+
+        for (let index = 0; index < size; index++) {
+            const x = (index * 2) / (size - 1) - 1;
+            curve[index] = Math.tanh(x * drive) / Math.tanh(drive);
+        }
+
+        return curve;
+    }
 
     async startSampledStrings() {
         const context = this.audioContext;
@@ -738,11 +814,11 @@ export class Voice {
             this.oscillatorC.stop(now + releaseTime + 0.1);
         }
 
-        this.lfo.stop(
+        this.lfo?.stop(
             now + releaseTime + 0.1
         );
 
-        this.filterLfo.stop(
+        this.filterLfo?.stop(
             now + releaseTime + 0.1
         );
 
@@ -807,6 +883,10 @@ export class Voice {
 
         try {
             this.filter?.disconnect();
+        } catch {}
+
+        try {
+            this.saturation?.disconnect();
         } catch {}
 
         try {
