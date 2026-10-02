@@ -1,6 +1,6 @@
 import { EventBus } from "./core/event-bus.js";
 import { AudioEngine } from "./audio/audio.js?v=20261002-31";
-import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-36";
+import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-38";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
 const $ = id => document.getElementById(id);
@@ -97,7 +97,6 @@ ui.arpeggiator.addEventListener("click", () => {
 });
 
 setArpeggiator(false);
-
 setInstrument("synth");
 
 for (const slider of ui.effects) {
