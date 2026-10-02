@@ -93,6 +93,8 @@ export class VisualEngine {
             const randomY = Math.abs((Math.sin(seed + 19.19) * 43758.5453) % 1);
 
             return {
+                nx: randomX,
+                ny: randomY,
                 x: innerWidth * randomX,
                 y: innerHeight * randomY,
                 radius: 0.35 + (index % 5) * 0.18,
@@ -622,7 +624,7 @@ export class VisualEngine {
             if (item.releasedAt) {
                 const releaseAge =
                     Math.max(0, (now - item.releasedAt) / 1000);
-                const releaseDuration = 6.0;
+                const releaseDuration = 12.0;
                 const releaseProgress =
                     Math.min(1, releaseAge / releaseDuration);
 
@@ -644,6 +646,8 @@ export class VisualEngine {
         // The background sky is independent from musical memory.
         // It never disappears when a played body is released.
         for (const star of this.backgroundStars) {
+            star.x = innerWidth * star.nx;
+            star.y = innerHeight * star.ny;
             const twinkle =
                 0.82 +
                 0.18 * Math.sin(now / (3200 + star.depth * 1800) + star.phase);
@@ -738,8 +742,7 @@ export class VisualEngine {
         // Nearby stars form persistent, low-contrast constellations.
         for (let i = 0; i < visibleStars.length; i++) {
             const a = visibleStars[i];
-            const ageA = (now - a.born) / 1000;
-            const presenceA = 0.20 + 0.80 * Math.exp(-ageA / 8);
+            const presenceA = 1;
 
             let nearest = null;
             let nearestDistance = Infinity;
@@ -762,8 +765,7 @@ export class VisualEngine {
             if (linked.has(pairKey)) continue;
             linked.add(pairKey);
 
-            const ageB = (now - nearest.born) / 1000;
-            const presenceB = 0.20 + 0.80 * Math.exp(-ageB / 8);
+            const presenceB = 1;
             const proximity = 1 - nearestDistance / 250;
             const alpha =
                 0.055 *
@@ -786,10 +788,7 @@ export class VisualEngine {
             const depth = star.depth ?? 0.5;
 
             // Stars never reach zero alpha: old memories remain as a faint sky.
-            const settling = Math.exp(-age / 8);
-            const presence =
-                (0.42 + settling * 0.58) *
-                layerStrength;
+            const presence = layerStrength;
 
             const energy = Math.max(0, Math.min(1, star.energy ?? 0.5));
             const radius =
@@ -875,8 +874,7 @@ export class VisualEngine {
 
         for (let i = 0; i < stars.length; i++) {
             const a = stars[i];
-            const ageA = (now - a.born) / 1000;
-            const presenceA = 0.18 + 0.82 * Math.exp(-ageA / 10);
+            const presenceA = 1;
 
             const neighbors = stars
                 .filter((_, index) => index !== i)
@@ -893,8 +891,7 @@ export class VisualEngine {
                 if (linked.has(pairKey)) continue;
                 linked.add(pairKey);
 
-                const ageB = (now - b.born) / 1000;
-                const presenceB = 0.18 + 0.82 * Math.exp(-ageB / 10);
+                const presenceB = 1;
                 const proximity = 1 - distance / maxDistance;
                 const depth = ((a.depth ?? 0.5) + (b.depth ?? 0.5)) * 0.5;
                 const alpha =
@@ -1036,7 +1033,7 @@ export class VisualEngine {
 
                 const style = this.getVisualStyle();
                 const maxTrailAge = item.releasedAt
-                    ? 10 * style.trail
+                    ? 18 * style.trail
                     : 8 * style.trail;
 
                 item.trail = item.trail.filter(
@@ -1484,7 +1481,6 @@ export class VisualEngine {
         if (!ctx) return;
 
         const now = performance.now();
-        const idle = now - this.lastInteraction > 15000;
 
         try {
             const ratio = Math.min(
