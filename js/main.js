@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-28";
+import { AudioEngine } from "./audio/audio.js?v=20261002-31";
 import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-30";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -55,8 +55,22 @@ function renderSignal(note = null) {
     ui.led.classList.toggle("on", connected || intensity > 0.01);
 }
 
+const INSTRUMENTS = [
+    ["synth", "INSTRUMENT · SYNTHÉTIQUE"],
+    ["strings", "INSTRUMENT · ENSEMBLE DE VIOLONS"],
+    ["harp", "INSTRUMENT · HARPE"]
+];
+
+let instrumentIndex = 0;
+
 function setInstrument(value) {
-    audio.setInstrument(value);
+    const index = INSTRUMENTS.findIndex(([id]) => id === value);
+    instrumentIndex = index >= 0 ? index : 0;
+    const [id, label] = INSTRUMENTS[instrumentIndex];
+
+    audio.setInstrument(id);
+    ui.instrument.textContent = label;
+    ui.instrument.dataset.instrument = id;
 }
 
 function setArpeggiator(enabled) {
@@ -73,8 +87,9 @@ function setEffect(type, value, output) {
     if (type === "echo") audio.setEcho(normalized);
 }
 
-ui.instrument.addEventListener("change", () => {
-    setInstrument(ui.instrument.value);
+ui.instrument.addEventListener("click", () => {
+    instrumentIndex = (instrumentIndex + 1) % INSTRUMENTS.length;
+    setInstrument(INSTRUMENTS[instrumentIndex][0]);
 });
 
 ui.arpeggiator.addEventListener("click", () => {
@@ -83,7 +98,7 @@ ui.arpeggiator.addEventListener("click", () => {
 
 setArpeggiator(false);
 
-setInstrument(ui.instrument.value);
+setInstrument("synth");
 
 for (const slider of ui.effects) {
     const type = slider.dataset.effect;
