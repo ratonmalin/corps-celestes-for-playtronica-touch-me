@@ -290,10 +290,9 @@ export class VisualEngine {
             color: item.hue,
             duration: item.duration,
             energy: item.velocity,
-            // Memory stars never expire. Their presence slowly settles
-            // instead of vanishing, so idle becomes a continuation of the
-            // interaction rather than a reset.
-            lifetime: Infinity,
+            // Musical memory is transient. The fixed background stars remain
+            // permanent, while played-note stars settle and disappear.
+            lifetime: 18,
             seed,
             phase: (item.note * 0.71 + memoryIndex * 0.37) % (Math.PI * 2),
             depth: 0.25 + ((Math.sin(seed * 0.73) + 1) * 0.5) * 0.75,
@@ -671,6 +670,13 @@ export class VisualEngine {
     }
 
     drawMemory(ctx, now, layerStrength = 1) {
+        // Musical memory fades after a finite lifetime. The fixed background
+        // sky remains permanent and independent from interaction history.
+        this.memory = this.memory.filter(star => {
+            const age = (now - star.born) / 1000;
+            return age < (star.lifetime ?? 18);
+        });
+
         // IMPORTANT: idle state is UI-only. It must never alter star visibility.
         // The memory sky is rendered continuously, including after 15 seconds.
 
