@@ -272,6 +272,7 @@ h1 {
     width: 100%;
     height: auto;
     filter: none;
+      transform: rotate(90deg);
 }
 
 .idle-message.visible { opacity: .9; }
