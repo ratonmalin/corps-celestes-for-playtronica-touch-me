@@ -46,11 +46,11 @@ function setStatus(text) {
 function renderSignal(note = null, touchIntensity = null) {
     const frequency = noteFrequency(note);
 
-    const intensityPercent = touchIntensity != null
-        ? Math.round(clamp(touchIntensity) * 100)
-        : midi?.lastControllerValue == null
-            ? 0
-            : Math.round(clamp(midi.lastControllerValue / 127) * 100);
+    const displayIntensity = touchIntensity != null
+        ? touchIntensity
+        : intensity;
+
+    const intensityPercent = Math.round(clamp(displayIntensity) * 100);
 
     ui.cc.textContent = intensityPercent + "%";
 
