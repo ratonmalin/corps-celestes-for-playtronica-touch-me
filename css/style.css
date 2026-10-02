@@ -22,6 +22,15 @@ body {
     color: var(--foreground);
     font-family: Inter, system-ui, sans-serif;
     overflow: hidden;
+    touch-action: none;
+}
+
+button, input, label, a, output {
+    touch-action: manipulation;
+}
+
+.effect-slider input[type="range"],
+.technical input[type="range"] {
     touch-action: auto;
 }
 
@@ -34,7 +43,7 @@ body {
 
 .header {
     position: relative;
-    z-index: 10;
+    z-index: 200;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -62,6 +71,8 @@ h1 {
 }
 
 .header-actions {
+    position: relative;
+    z-index: 210;
     display: flex;
     align-items: start;
     justify-content: flex-end;
@@ -370,9 +381,6 @@ h1 {
     pointer-events: none;
 }
 
-.is-idle .header-actions {
-    pointer-events: none;
-}
 \n@media (max-width: 900px) {
     .app { padding: 24px 24px 100px; }
     .status-bar { top: 67px; right: 24px; font-size: 10px; }
