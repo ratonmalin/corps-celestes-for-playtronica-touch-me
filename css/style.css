@@ -71,7 +71,8 @@ h1 {
 
 .text-button,
 .scale-control {
-    width: max-content;
+    width: 300px;
+    max-width: 300px;
     min-width: 0;
     min-height: 36px;
     padding: 7px 0;
@@ -83,6 +84,9 @@ h1 {
     font: inherit;
     font-size: 11px;
     letter-spacing: .08em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
     cursor: pointer;
     touch-action: manipulation;
 }
