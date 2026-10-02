@@ -360,3 +360,13 @@ h1 {
     .technical input { width: 58px; }
     .effect-controls { left: 16px; bottom: 82px; }
 }
+
+
+.idle-field {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+}
