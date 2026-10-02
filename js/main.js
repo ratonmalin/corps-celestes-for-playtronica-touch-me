@@ -1,6 +1,6 @@
 import { EventBus } from "./core/event-bus.js";
 import { AudioEngine } from "./audio/audio.js?v=20261002-31";
-import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-33";
+import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-34";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
 const $ = id => document.getElementById(id);
