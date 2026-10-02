@@ -611,12 +611,11 @@ export class VisualEngine {
     }
 
     drawMemory(ctx, now, layerStrength = 1) {
-        const pathLifetime = 18;
-
         for (const star of this.memory) {
             if (!star.path || star.path.length < 2) continue;
 
             const age = (now - star.born) / 1000;
+            const pathLifetime = Math.min(star.lifetime, 18);
             const life = Math.max(0, 1 - age / pathLifetime);
 
             if (life <= 0) continue;
@@ -636,7 +635,7 @@ export class VisualEngine {
             }
 
             ctx.strokeStyle =
-                `hsla(${star.hue}, 42%, 76%, ${0.060 * life * layerStrength})`;
+                `rgba(${this.hexToRgba(star.color, 0.060 * life * layerStrength)})`;
             ctx.lineWidth = 0.7;
             ctx.stroke();
             ctx.restore();
@@ -1029,7 +1028,7 @@ export class VisualEngine {
                     Math.PI * 2
                 );
                 ctx.fillStyle =
-                    `hsla(${(item.hue + 35) % 360}, 62%, 64%, ${0.72 * life})`;
+                    `rgba(${this.hexToRgba(item.hue, 0.72 * life)})`;
                 ctx.fill();
             }
 
