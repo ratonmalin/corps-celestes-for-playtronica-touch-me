@@ -229,7 +229,7 @@ export class AudioEngine {
 
         this.delayNode.delayTime.value = 0.24;
         this.delayFeedback.gain.value = 0.42;
-        this.delayGain.gain.value = 0;
+        this.delayGain.gain.value = this.delayAmount;
 
         this.delayInput.connect(this.delayNode);
         this.delayNode.connect(this.delayFeedback);
@@ -244,7 +244,7 @@ export class AudioEngine {
 
         this.echoNode.delayTime.value = 0.52;
         this.echoFeedback.gain.value = 0.5;
-        this.echoGain.gain.value = 0;
+        this.echoGain.gain.value = this.echoAmount * 0.9;
 
         this.echoInput.connect(this.echoNode);
         this.echoNode.connect(this.echoFeedback);
