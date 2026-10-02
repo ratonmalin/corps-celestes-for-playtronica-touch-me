@@ -28,7 +28,6 @@ const visuals = new VisualEngine(eventBus);
 let midi = null;
 let mobileTouch = null;
 let connected = false;
-let intensity = 0;
 
 const clamp = (value, min = 0, max = 1) =>
     Math.max(min, Math.min(max, value));
@@ -47,10 +46,12 @@ function renderSignal(note = null, touchIntensity = null) {
     const frequency = noteFrequency(note);
 
     const displayIntensity = touchIntensity != null
-        ? touchIntensity
-        : intensity;
+        ? clamp(touchIntensity)
+        : midi?.lastControllerValue == null
+            ? 0
+            : clamp(midi.lastControllerValue / 127);
 
-    const intensityPercent = Math.round(clamp(displayIntensity) * 100);
+    const intensityPercent = Math.round(displayIntensity * 100);
 
     ui.cc.textContent = intensityPercent + "%";
 
@@ -175,22 +176,12 @@ ui.sensitivity.addEventListener("input", () => {
 });
 
 eventBus.on("noteon", event => {
-    const value = Number.isFinite(event.touchIntensity) ? event.touchIntensity : event.velocity;
-    intensity = clamp(value);
     renderSignal(event.note);
 });
 
 eventBus.on("noteoff", () => {
-    intensity *= 0.92;
     renderSignal();
 });
-
-function decay() {
-    intensity *= 0.985;
-    if (intensity < 0.002) intensity = 0;
-    renderSignal();
-    requestAnimationFrame(decay);
-}
 
 function resetVolume() {
     const value = 0.5;
@@ -207,7 +198,6 @@ async function boot() {
     ui.sensOut.textContent = sensitivity.toFixed(1) + "×";
 
     visuals.start();
-    decay();
     setStatus("");
 
     midi = new TouchMeMidiInput(eventBus, event => {
@@ -224,8 +214,7 @@ async function boot() {
             return;
         }
         if (event.type === "intensity" || event.type === "note") {
-            intensity = clamp(event.value);
-            renderSignal(event.note, event.source === "touch" ? event.value : null);
+            renderSignal(event.note, event.type === "intensity" ? event.value / (midi?.sensitivity || 1) : null);
         }
     });
 
