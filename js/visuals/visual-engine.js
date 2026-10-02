@@ -267,9 +267,10 @@ export class VisualEngine {
             y: innerHeight * (0.12 + Math.abs(randomY) * 0.72),
             born: performance.now(),
             note: item.note,
-            hue: item.hue,
+            color: item.hue,
             duration: item.duration,
             energy: item.velocity,
+            lifetime: Math.max(12, Math.min(120, item.duration * 12)),
             path: (item.trail ?? []).map(point => ({
                 x: point.x,
                 y: point.y,
@@ -610,9 +611,6 @@ export class VisualEngine {
     }
 
     drawMemory(ctx, now, layerStrength = 1) {
-        // Played stars are the persistent score of the session.
-        // They remain visible until the bounded memory buffer is full.
-        const memoryLifetime = Infinity;
         const pathLifetime = 18;
 
         for (const star of this.memory) {
@@ -647,7 +645,7 @@ export class VisualEngine {
         const visibleStars = this.memory
             .filter(star => {
                 const age = (now - star.born) / 1000;
-                return age < memoryLifetime;
+                return age < star.lifetime;
             })
             .slice(-this.maxMemoryStars);
 
@@ -656,7 +654,7 @@ export class VisualEngine {
         for (let i = 0; i < visibleStars.length; i++) {
             const a = visibleStars[i];
             const ageA = (now - a.born) / 1000;
-            const lifeA = Math.max(0, 1 - ageA / memoryLifetime);
+            const lifeA = Math.max(0, 1 - ageA / a.lifetime);
 
             let nearest = null;
             let nearestDistance = Infinity;
@@ -680,7 +678,7 @@ export class VisualEngine {
             linked.add(pairKey);
 
             const ageB = (now - nearest.born) / 1000;
-            const lifeB = Math.max(0, 1 - ageB / memoryLifetime);
+            const lifeB = Math.max(0, 1 - ageB / nearest.lifetime);
             const alpha =
                 0.12 *
                 layerStrength *
@@ -699,7 +697,7 @@ export class VisualEngine {
 
         for (const star of this.memory) {
             const age = (now - star.born) / 1000;
-            const life = Math.max(0, 1 - age / memoryLifetime);
+            const life = Math.max(0, 1 - age / star.lifetime);
 
             if (life <= 0) continue;
 
@@ -711,14 +709,14 @@ export class VisualEngine {
             ctx.beginPath();
             ctx.arc(star.x, star.y, radius, 0, Math.PI * 2);
             ctx.fillStyle =
-                `hsla(${star.hue ?? this.getNoteHue(star.note || 48)}, 62%, 82%, ${0.82 * life * layerStrength})`;
+                `rgba(${this.hexToRgba(star.color, 0.82 * life * layerStrength)})`;
             ctx.fill();
 
             if (star.duration > 1.4) {
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, radius * 5.5, 0, Math.PI * 2);
                 ctx.strokeStyle =
-                    `hsla(${star.hue ?? this.getNoteHue(star.note || 48)}, 52%, 78%, ${0.13 * life * layerStrength})`;
+                    `rgba(${this.hexToRgba(star.color, 0.13 * life * layerStrength)})`;
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
