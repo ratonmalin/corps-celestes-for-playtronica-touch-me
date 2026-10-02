@@ -771,13 +771,13 @@ export class VisualEngine {
     }
 
     drawIdle(ctx, now) {
-        const idle = now - this.lastInteraction > 30000;
+        const idle = now - this.lastInteraction > 15000;
         const idleMessage = document.getElementById("idle-message");
         const idleMessageText = document.getElementById("idle-message-text");
         const idleHands = document.getElementById("idle-hands");
 
         const elapsed = (now - this.lastInteraction) / 1000;
-        const sleepElapsed = Math.max(0, elapsed - 30);
+        const sleepElapsed = Math.max(0, elapsed - 15);
 
         // The galaxy is a permanent background layer. It must not depend on
         // whether a note is currently active.
