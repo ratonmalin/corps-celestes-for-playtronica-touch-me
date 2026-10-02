@@ -19,18 +19,16 @@ export class VisualEngine {
         this.sleepCycle = -1;
         this.sleepMessageIndex = -1;
         this.interactionCount = 0;
-        this.visualStyleIndex = 0;
-        this.visualStyleChangedAt = performance.now();
+        // Visual palette is intentionally immutable during a session.
+        // Changing the musical scale must never recolor existing or new bodies.
 
         this.onNoteOn = this.onNoteOn.bind(this);
         this.onNoteOff = this.onNoteOff.bind(this);
-        this.onScaleChange = this.onScaleChange.bind(this);
         this.frame = this.frame.bind(this);
         this.handleResize = this.handleResize.bind(this);
 
         eventBus.on("noteon", this.onNoteOn);
         eventBus.on("noteoff", this.onNoteOff);
-        eventBus.on("scalechange", this.onScaleChange);
     }
 
     start() {
@@ -86,48 +84,24 @@ export class VisualEngine {
         return `${event.source}-${event.channel}-${event.note}`;
     }
 
-    onScaleChange(event) {
-        if (!Number.isFinite(event?.index)) return;
-
-        this.visualStyleIndex =
-            ((event.index % 3) + 3) % 3;
-
-        this.visualStyleChangedAt = performance.now();
-        this.lastInteraction = performance.now();
-    }
-
     getVisualStyle() {
-        const styles = [
-            {
-                palette: ["#61E7FF", "#FF6B8A", "#B58CFF", "#7CFFB2", "#FFD166", "#F5F7FF", "#4DA6FF"],
-                saturation: 78,
-                lightness: 76,
-                insideForce: 0.065,
-                drag: 0.9992,
-                maxSpeed: 1,
-                trail: 1
-            },
-            {
-                palette: ["#9B5DE5", "#F15BB5", "#00BBF9", "#00F5D4", "#FEE440", "#FF8A5B", "#E8D7FF"],
-                saturation: 82,
-                lightness: 70,
-                insideForce: 0.050,
-                drag: 0.9987,
-                maxSpeed: 0.88,
-                trail: 1.35
-            },
-            {
-                palette: ["#FFD166", "#06D6A0", "#118AB2", "#EF476F", "#9B5DE5", "#F8F7FF", "#FF9F1C"],
-                saturation: 86,
-                lightness: 78,
-                insideForce: 0.075,
-                drag: 0.9995,
-                maxSpeed: 1.12,
-                trail: 0.78
-            }
-        ];
-
-        return styles[this.visualStyleIndex] ?? styles[0];
+        return {
+            palette: [
+                "#61E7FF",
+                "#FF6B8A",
+                "#B58CFF",
+                "#7CFFB2",
+                "#FFD166",
+                "#F5F7FF",
+                "#4DA6FF"
+            ],
+            saturation: 78,
+            lightness: 76,
+            insideForce: 0.065,
+            drag: 0.9992,
+            maxSpeed: 1,
+            trail: 1
+        };
     }
 
     getNoteHue(note) {
@@ -660,7 +634,7 @@ export class VisualEngine {
             }
 
             ctx.strokeStyle =
-                `hsla(${star.hue ?? this.getNoteHue(star.note || 48)}, 42%, 76%, ${0.060 * life * layerStrength})`;
+                `hsla(${star.hue}, 42%, 76%, ${0.060 * life * layerStrength})`;
             ctx.lineWidth = 0.7;
             ctx.stroke();
             ctx.restore();
