@@ -14,7 +14,7 @@ export class VisualEngine {
         this.chordSize = 0;
         this.chordParticles = [];
         this.maxActiveBodies = 32;
-        this.maxMemoryStars = 180;
+        this.maxMemoryStars = 500;
         this.lastFrameError = 0;
         this.sleepCycle = -1;
         this.sleepMessageIndex = -1;
@@ -268,7 +268,15 @@ export class VisualEngine {
             color: item.hue,
             duration: item.duration,
             energy: item.velocity,
-            lifetime: Math.max(300, Math.min(1800, item.duration * 60)),
+            // Memory stars never expire. Their presence slowly settles
+            // instead of vanishing, so idle becomes a continuation of the
+            // interaction rather than a reset.
+            lifetime: Infinity,
+            seed,
+            phase: (item.note * 0.71 + memoryIndex * 0.37) % (Math.PI * 2),
+            depth: 0.25 + ((Math.sin(seed * 0.73) + 1) * 0.5) * 0.75,
+            driftX: Math.sin(seed * 1.17) * 0.65,
+            driftY: Math.cos(seed * 0.91) * 0.45,
             path: (item.trail ?? []).map(point => ({
                 x: point.x,
                 y: point.y,
@@ -609,14 +617,55 @@ export class VisualEngine {
     }
 
     drawMemory(ctx, now, layerStrength = 1) {
+        const idle = now - this.lastInteraction > 15000;
+
+        // Persistent stars drift at different depths. The motion is deliberately
+        // slow enough to feel like a living sky rather than particles.
+        for (const star of this.memory) {
+            const depth = star.depth ?? 0.5;
+            const drift = (0.18 + depth * 0.72) * (idle ? 0.65 : 1);
+
+            star.x += Math.sin(now / 10000 + star.phase) *
+                star.driftX * drift * 0.018;
+            star.y += Math.cos(now / 12000 + star.phase * 1.13) *
+                star.driftY * drift * 0.018;
+
+            const margin = 24;
+            if (star.x < margin) star.x = margin;
+            if (star.x > innerWidth - margin) star.x = innerWidth - margin;
+            if (star.y < margin) star.y = margin;
+            if (star.y > innerHeight - margin) star.y = innerHeight - margin;
+        }
+
+        // A restrained pulse propagates through the whole sky after interaction.
+        const pulseAge = (now - this.lastInteraction) / 1000;
+        if (pulseAge >= 0 && pulseAge < 1.25) {
+            const progress = pulseAge / 1.25;
+            const center = this.getSystemCenter();
+            const radius =
+                25 +
+                (1 - Math.pow(1 - progress, 3)) *
+                    Math.min(innerWidth, innerHeight) *
+                    0.42;
+            const alpha = Math.sin(progress * Math.PI) * 0.075 * layerStrength;
+
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(220, 236, 255, ${alpha})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Trails are vivid briefly, then become persistent ghost traces.
         for (const star of this.memory) {
             if (!star.path || star.path.length < 2) continue;
 
             const age = (now - star.born) / 1000;
-            const pathLifetime = Math.min(star.lifetime, 18);
-            const life = Math.max(0, 1 - age / pathLifetime);
-
-            if (life <= 0) continue;
+            const pathLife = Math.max(0, 1 - age / 10);
+            if (pathLife <= 0) continue;
 
             ctx.save();
             ctx.globalCompositeOperation = "lighter";
@@ -624,34 +673,26 @@ export class VisualEngine {
 
             for (let i = 0; i < star.path.length; i++) {
                 const point = star.path[i];
-
-                if (i === 0) {
-                    ctx.moveTo(point.x, point.y);
-                } else {
-                    ctx.lineTo(point.x, point.y);
-                }
+                if (i === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
             }
 
+            const depthAlpha = 0.025 + (star.depth ?? 0.5) * 0.035;
             ctx.strokeStyle =
-                `rgba(${this.hexToRgba(star.color, 0.060 * life * layerStrength)})`;
-            ctx.lineWidth = 0.7;
+                `rgba(${this.hexToRgba(star.color, depthAlpha * pathLife * layerStrength)})`;
+            ctx.lineWidth = 0.45 + (star.energy ?? 0) * 0.35;
             ctx.stroke();
             ctx.restore();
         }
 
-        const visibleStars = this.memory
-            .filter(star => {
-                const age = (now - star.born) / 1000;
-                return age < star.lifetime;
-            })
-            .slice(-this.maxMemoryStars);
-
+        const visibleStars = this.memory.slice(-this.maxMemoryStars);
         const linked = new Set();
 
+        // Nearby stars form persistent, low-contrast constellations.
         for (let i = 0; i < visibleStars.length; i++) {
             const a = visibleStars[i];
             const ageA = (now - a.born) / 1000;
-            const lifeA = Math.max(0, 1 - ageA / a.lifetime);
+            const presenceA = 0.20 + 0.80 * Math.exp(-ageA / 8);
 
             let nearest = null;
             let nearestDistance = Infinity;
@@ -675,65 +716,124 @@ export class VisualEngine {
             linked.add(pairKey);
 
             const ageB = (now - nearest.born) / 1000;
-            const lifeB = Math.max(0, 1 - ageB / nearest.lifetime);
+            const presenceB = 0.20 + 0.80 * Math.exp(-ageB / 8);
+            const proximity = 1 - nearestDistance / 250;
             const alpha =
-                0.12 *
+                0.055 *
                 layerStrength *
-                lifeA *
-                lifeB *
-                (1 - nearestDistance / 250);
+                presenceA *
+                presenceB *
+                proximity;
 
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(nearest.x, nearest.y);
             ctx.strokeStyle =
                 `rgba(185, 205, 235, ${alpha})`;
-            ctx.lineWidth = 0.8;
+            ctx.lineWidth = 0.55;
             ctx.stroke();
         }
 
-        for (const star of this.memory) {
+        for (const star of visibleStars) {
             const age = (now - star.born) / 1000;
-            const life = Math.max(0, 1 - age / star.lifetime);
+            const depth = star.depth ?? 0.5;
 
-            if (life <= 0) continue;
+            // Stars never reach zero alpha: old memories remain as a faint sky.
+            const settling = Math.exp(-age / 8);
+            const idleBreath = idle
+                ? 0.92 + 0.08 * Math.sin(now / 2600 + star.phase)
+                : 1;
+            const presence =
+                (0.18 + settling * 0.82) *
+                idleBreath *
+                layerStrength;
 
+            const energy = Math.max(0, Math.min(1, star.energy ?? 0.5));
             const radius =
-                1.4 +
-                Math.min(1.8, star.duration * 0.38) +
-                star.energy * 0.7;
+                0.65 +
+                depth * 1.55 +
+                energy * 1.15 +
+                Math.min(1.6, star.duration * 0.30);
+
+            if (energy > 0.45 || depth > 0.72) {
+                ctx.beginPath();
+                ctx.arc(
+                    star.x,
+                    star.y,
+                    radius * (3.8 + depth * 2.2),
+                    0,
+                    Math.PI * 2
+                );
+                ctx.strokeStyle =
+                    `rgba(${this.hexToRgba(star.color, 0.035 * presence)})`;
+                ctx.lineWidth = 0.7;
+                ctx.stroke();
+            }
 
             ctx.beginPath();
             ctx.arc(star.x, star.y, radius, 0, Math.PI * 2);
             ctx.fillStyle =
-                `rgba(${this.hexToRgba(star.color, 0.82 * life * layerStrength)})`;
+                `rgba(${this.hexToRgba(star.color, 0.82 * presence)})`;
             ctx.fill();
 
-            if (star.duration > 1.4) {
+            // Rare, slow twinkle.
+            const twinkle = Math.pow(
+                Math.max(
+                    0,
+                    Math.sin(now / (1800 + depth * 2200) + star.phase)
+                ),
+                12
+            );
+
+            if (twinkle > 0.72) {
                 ctx.beginPath();
-                ctx.arc(star.x, star.y, radius * 5.5, 0, Math.PI * 2);
+                ctx.arc(
+                    star.x,
+                    star.y,
+                    radius * (2.4 + twinkle * 1.8),
+                    0,
+                    Math.PI * 2
+                );
                 ctx.strokeStyle =
-                    `rgba(${this.hexToRgba(star.color, 0.13 * life * layerStrength)})`;
-                ctx.lineWidth = 1;
+                    `rgba(${this.hexToRgba(star.color, 0.07 * twinkle * presence)})`;
+                ctx.lineWidth = 0.6;
                 ctx.stroke();
             }
+        }
+
+        // Idle becomes a quiet breathing state rather than a reset.
+        if (idle && visibleStars.length > 0) {
+            const center = this.getSystemCenter();
+            const breath = 0.5 + 0.5 * Math.sin(now / 5200);
+            const radius =
+                Math.min(innerWidth, innerHeight) *
+                (0.28 + breath * 0.035);
+
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle =
+                `rgba(210, 228, 250, ${0.018 + breath * 0.018})`;
+            ctx.lineWidth = 0.7;
+            ctx.stroke();
+            ctx.restore();
         }
     }
 
     drawConstellation(ctx, now, layerStrength = 1) {
-        const stars = this.memory.filter(star => {
-            const age = (now - star.born) / 1000;
-            return age < star.lifetime;
-        });
+        const stars = this.memory.slice(-this.maxMemoryStars);
+        if (stars.length < 3) return;
 
-        if (stars.length < 2) return;
-
+        // Local connections let constellations emerge without creating a web.
+        const maxDistance = 340;
+        const maxNeighbors = 2;
         const linked = new Set();
 
         for (let i = 0; i < stars.length; i++) {
             const a = stars[i];
             const ageA = (now - a.born) / 1000;
-            const lifeA = Math.max(0, 1 - ageA / a.lifetime);
+            const presenceA = 0.18 + 0.82 * Math.exp(-ageA / 10);
 
             const neighbors = stars
                 .filter((_, index) => index !== i)
@@ -741,9 +841,9 @@ export class VisualEngine {
                     star: b,
                     distance: Math.hypot(b.x - a.x, b.y - a.y)
                 }))
-                .filter(entry => entry.distance < 340)
+                .filter(entry => entry.distance < maxDistance)
                 .sort((x, y) => x.distance - y.distance)
-                .slice(0, 2);
+                .slice(0, maxNeighbors);
 
             for (const { star: b, distance } of neighbors) {
                 const pairKey = [a.born, b.born].sort().join(":");
@@ -751,22 +851,25 @@ export class VisualEngine {
                 linked.add(pairKey);
 
                 const ageB = (now - b.born) / 1000;
-                const lifeB = Math.max(0, 1 - ageB / b.lifetime);
-                const proximity = 1 - distance / 340;
+                const presenceB = 0.18 + 0.82 * Math.exp(-ageB / 10);
+                const proximity = 1 - distance / maxDistance;
+                const depth = ((a.depth ?? 0.5) + (b.depth ?? 0.5)) * 0.5;
                 const alpha =
-                    0.11 *
+                    0.085 *
                     layerStrength *
-                    lifeA *
-                    lifeB *
-                    proximity;
+                    presenceA *
+                    presenceB *
+                    proximity *
+                    (0.65 + depth * 0.35);
 
                 if (alpha <= 0) continue;
 
                 ctx.beginPath();
                 ctx.moveTo(a.x, a.y);
                 ctx.lineTo(b.x, b.y);
-                ctx.strokeStyle = `rgba(205, 220, 240, ${alpha})`;
-                ctx.lineWidth = 0.75;
+                ctx.strokeStyle =
+                    `rgba(205, 220, 240, ${alpha})`;
+                ctx.lineWidth = 0.6 + proximity * 0.35;
                 ctx.stroke();
             }
         }
