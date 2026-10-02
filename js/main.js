@@ -2,6 +2,7 @@ import { EventBus } from "./core/event-bus.js";
 import { AudioEngine } from "./audio/audio.js?v=20261002-39";
 import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-45";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
+import { MobileTouchInput } from "./input/mobile-touch.js";
 
 const $ = id => document.getElementById(id);
 
@@ -25,6 +26,7 @@ const audio = new AudioEngine(eventBus);
 const visuals = new VisualEngine(eventBus);
 
 let midi = null;
+let mobileTouch = null;
 let connected = false;
 let intensity = 0;
 
@@ -41,13 +43,17 @@ function setStatus(text) {
     ui.status.textContent = text;
 }
 
-function renderSignal(note = null) {
+function renderSignal(note = null, touchIntensity = null) {
     const frequency = noteFrequency(note);
 
-    ui.cc.textContent =
-        midi?.lastControllerValue == null
-            ? "090"
-            : String(Math.round(midi.lastControllerValue)).padStart(3, "0");
+    const controllerValue =
+        touchIntensity != null
+            ? Math.round(clamp(touchIntensity) * 127)
+            : midi?.lastControllerValue == null
+                ? 90
+                : Math.round(midi.lastControllerValue);
+
+    ui.cc.textContent = String(controllerValue).padStart(3, "0");
 
     if (frequency > 0) ui.freq.textContent = Math.round(frequency) + " Hz";
     ui.led.classList.toggle("on", connected);
@@ -69,6 +75,7 @@ function setScale(index) {
     ui.scale.textContent = label;
     ui.scale.dataset.scale = String(id);
     midi?.setScale(id);
+    mobileTouch?.setScale(id);
     eventBus.emit({ type: "scalechange", index: id });
 }
 
@@ -141,6 +148,16 @@ ui.fullscreen.addEventListener("click", async () => {
     }
 });
 
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") {
+        exitFullscreenSafely();
+    }
+});
+
+window.addEventListener("pagehide", () => {
+    exitFullscreenSafely();
+});
+
 document.addEventListener("fullscreenchange", () => {
     ui.fullscreen.textContent = document.fullscreenElement ? "QUITTER" : "FULL SCREEN";
 });
@@ -155,6 +172,7 @@ ui.sensitivity.addEventListener("input", () => {
     const value = Number(ui.sensitivity.value);
     ui.sensOut.textContent = value.toFixed(1) + "×";
     midi?.setSensitivity(value);
+    mobileTouch?.setSensitivity(value);
 });
 
 eventBus.on("noteon", event => {
@@ -208,13 +226,18 @@ async function boot() {
         }
         if (event.type === "intensity" || event.type === "note") {
             intensity = clamp(event.value);
-            renderSignal(event.note);
+            renderSignal(event.note, event.source === "touch" ? event.value : null);
         }
     });
 
     midi.setSensitivity(sensitivity);
     midi.setScale(scaleIndex);
     await midi.start();
+
+    mobileTouch = new MobileTouchInput(eventBus);
+    mobileTouch.setSensitivity(sensitivity);
+    mobileTouch.setScale(scaleIndex);
+    mobileTouch.start();
 
     const retry = () => {
         if (!midi.input) {
