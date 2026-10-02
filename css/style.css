@@ -263,7 +263,7 @@ h1 {
 .idle-message {
     position: fixed;
     inset: 0;
-    z-index: 120;
+    z-index: 90;
     display: block;
     color: #ffffff;
     font-family: "Roboto", sans-serif;
@@ -294,7 +294,7 @@ h1 {
     position: fixed;
     left: 50%;
     top: 50%;
-    z-index: 121;
+    z-index: 91;
     display: block;
     width: min(34vw, 460px);
     max-width: none;
@@ -337,7 +337,9 @@ h1 {
 }
 
 
-/* Idle is a presentation state, not a visual reset. */
+/* Idle is a presentation state, not a visual reset.
+   The idle artwork stays beneath the celestial canvas so the sky
+   remains visible continuously during the transition. */
 .app > .header,
 .status-bar,
 .effect-panel,
