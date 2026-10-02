@@ -277,9 +277,9 @@ export class VisualEngine {
             duration: null,
             mass: 0.75 + ((event.note % 12) / 11) * 0.55,
             x: this.bodyPositions.get(event.note)?.x ??
-                innerWidth * (0.5 + Math.sin(event.note * 1.73) * 0.25),
+                innerWidth * (0.5 + Math.sin(event.note * 1.73) * 0.32),
             y: this.bodyPositions.get(event.note)?.y ??
-                innerHeight * (0.47 + Math.cos(event.note * 1.17) * 0.20),
+                innerHeight * (0.47 + Math.cos(event.note * 1.17) * 0.25),
             vx: this.bodyPositions.get(event.note)?.vx ??
                 Math.cos(event.note * 0.83) * 18,
             vy: this.bodyPositions.get(event.note)?.vy ??
@@ -384,9 +384,9 @@ export class VisualEngine {
             const age = (now - item.born) / 1000;
             const noteProfile = this.getNoteProfile(item.note);
             const baseX =
-                innerWidth * (0.5 + Math.sin(item.note * 1.73) * 0.25);
+                innerWidth * (0.5 + Math.sin(item.note * 1.73) * 0.32);
             const baseY =
-                innerHeight * (0.47 + Math.cos(item.note * 1.17) * 0.20);
+                innerHeight * (0.47 + Math.cos(item.note * 1.17) * 0.25);
 
             if (count >= 2) {
                 const dt = Math.min(
@@ -410,8 +410,10 @@ export class VisualEngine {
                     );
 
                     const distance = Math.sqrt(distanceSq);
+                    const gravityStrength =
+                        5200 * (1 + Math.max(0, count - 2) * 0.55);
                     const force =
-                        5200 *
+                        gravityStrength *
                         (other.mass ?? 1) /
                         distanceSq;
 
