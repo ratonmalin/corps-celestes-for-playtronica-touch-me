@@ -263,7 +263,7 @@ h1 {
 .idle-message {
     position: fixed;
     inset: 0;
-    z-index: 2;
+    z-index: 120;
     display: block;
     color: #ffffff;
     font-family: "Roboto", sans-serif;
@@ -294,7 +294,7 @@ h1 {
     position: fixed;
     left: 50%;
     top: 50%;
-    z-index: 2;
+    z-index: 121;
     display: block;
     width: min(34vw, 460px);
     max-width: none;
