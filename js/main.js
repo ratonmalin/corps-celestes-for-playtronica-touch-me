@@ -53,6 +53,25 @@ function renderSignal(note = null) {
     ui.led.classList.toggle("on", connected);
 }
 
+const SCALES = [
+    [0, "GAMME · PENTATONIQUE MAJEURE"],
+    [1, "GAMME · PENTATONIQUE MINEURE"],
+    [2, "GAMME · SUSPENDUE"]
+];
+
+let scaleIndex = 0;
+
+function setScale(index) {
+    scaleIndex = ((Number(index) % SCALES.length) + SCALES.length) % SCALES.length;
+    const [id, label] = SCALES[scaleIndex];
+
+    audio.start().catch(() => {});
+    ui.scale.textContent = label;
+    ui.scale.dataset.scale = String(id);
+    midi?.setScale(id);
+    eventBus.emit({ type: "scalechange", index: id });
+}
+
 const INSTRUMENTS = [
     ["synth", "INSTRUMENT · SYNTHÉTIQUE"],
     ["strings", "INSTRUMENT · CORDES"],
@@ -83,12 +102,17 @@ function setEffect(type, value, output) {
     if (type === "echo") audio.setEcho(normalized);
 }
 
+ui.scale.addEventListener("click", () => {
+    setScale(scaleIndex + 1);
+});
+
 ui.instrument.addEventListener("click", () => {
     instrumentIndex = (instrumentIndex + 1) % INSTRUMENTS.length;
     setInstrument(INSTRUMENTS[instrumentIndex][0]);
 });
 
 
+setScale(0);
 setInstrument("synth");
 
 for (const slider of ui.effects) {
@@ -131,15 +155,6 @@ ui.sensitivity.addEventListener("input", () => {
     const value = Number(ui.sensitivity.value);
     ui.sensOut.textContent = value.toFixed(1) + "×";
     midi?.setSensitivity(value);
-});
-
-ui.scale.addEventListener("change", async () => {
-    try { await audio.start(); }
-    catch (error) { console.info("[AUDIO] En attente d'un geste utilisateur.", error); }
-
-    const index = Number(ui.scale.value);
-    midi?.setScale(index);
-    eventBus.emit({ type: "scalechange", index });
 });
 
 eventBus.on("noteon", event => {
@@ -198,7 +213,7 @@ async function boot() {
     });
 
     midi.setSensitivity(sensitivity);
-    midi.setScale(Number(ui.scale.value) || 0);
+    midi.setScale(scaleIndex);
     await midi.start();
 
     const retry = () => {
