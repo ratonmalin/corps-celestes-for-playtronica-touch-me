@@ -260,7 +260,7 @@ h1 {
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 2.8s ease;
+    animation: none;
 }
 
 #idle-message-text {
@@ -272,6 +272,7 @@ h1 {
 
 .idle-message.visible {
     opacity: 0.92;
+    animation: idle-fade-in 2.8s ease forwards;
 }
 
 .idle-hands {
@@ -286,19 +287,19 @@ h1 {
     transform: translate(-50%, -62%) rotate(90deg);
     pointer-events: none;
     opacity: 0;
-    transition: opacity 2.8s ease;
+    animation: none;
 }
 
 .idle-hands.visible {
     opacity: 0.92;
+    animation: idle-fade-in 2.8s ease forwards;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .idle-message,
-    .idle-hands {
-        transition: none;
-    }
+@keyframes idle-fade-in {
+    from { opacity: 0; }
+    to { opacity: 0.92; }
 }
+
 
 @media (max-width: 700px) {
     #idle-message-text {
