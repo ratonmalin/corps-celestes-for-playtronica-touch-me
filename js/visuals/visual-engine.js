@@ -1454,10 +1454,11 @@ export class VisualEngine {
             this.drawMemory(ctx, now);
             this.drawConstellation(ctx, now);
             this.drawActiveBodies(ctx, now);
-            this.drawIdle(now);
 
             this.lastFrameError = 0;
         } catch (error) {
+            // A UI/DOM error must never leave the canvas blank.
+            // Memory stars are rendered independently from idle state.
             if (now - this.lastFrameError > 2000) {
                 console.warn("[VISUALS] Frame recovered:", error);
                 this.lastFrameError = now;
@@ -1475,6 +1476,17 @@ export class VisualEngine {
                 ctx.setLineDash([]);
             } catch {
                 // Ignore canvas recovery errors and keep the loop alive.
+            }
+        }
+
+        // Idle UI is deliberately outside the canvas render transaction:
+        // if the DOM overlay fails, the celestial memory remains visible.
+        try {
+            this.drawIdle(now);
+        } catch (error) {
+            if (now - this.lastFrameError > 2000) {
+                console.warn("[VISUALS] Idle UI error:", error);
+                this.lastFrameError = now;
             }
         }
 
