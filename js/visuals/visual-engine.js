@@ -318,6 +318,7 @@ export class VisualEngine {
             y: innerHeight * (0.12 + Math.abs(randomY) * 0.72),
             born: performance.now(),
             note: item.note,
+            hue: item.hue,
             duration: item.duration,
             energy: item.velocity,
             path: (item.trail ?? []).map(point => ({
@@ -659,7 +660,7 @@ export class VisualEngine {
         }
     }
 
-    drawMemory(ctx, now) {
+    drawMemory(ctx, now, layerStrength = 1) {
         const memoryLifetime = 120;
         const pathLifetime = 18;
 
@@ -686,7 +687,7 @@ export class VisualEngine {
             }
 
             ctx.strokeStyle =
-                `hsla(${this.getNoteHue(star.note || 48)}, 42%, 76%, ${0.045 * life})`;
+                `hsla(${star.hue ?? this.getNoteHue(star.note || 48)}, 42%, 76%, ${0.060 * life * layerStrength})`;
             ctx.lineWidth = 0.7;
             ctx.stroke();
             ctx.restore();
@@ -730,7 +731,8 @@ export class VisualEngine {
             const ageB = (now - nearest.born) / 1000;
             const lifeB = Math.max(0, 1 - ageB / memoryLifetime);
             const alpha =
-                0.10 *
+                0.12 *
+                layerStrength *
                 lifeA *
                 lifeB *
                 (1 - nearestDistance / 250);
@@ -758,14 +760,14 @@ export class VisualEngine {
             ctx.beginPath();
             ctx.arc(star.x, star.y, radius, 0, Math.PI * 2);
             ctx.fillStyle =
-                `hsla(${this.getNoteHue(star.note || 48)}, 62%, 82%, ${0.72 * life})`;
+                `hsla(${star.hue ?? this.getNoteHue(star.note || 48)}, 62%, 82%, ${0.82 * life * layerStrength})`;
             ctx.fill();
 
             if (star.duration > 1.4) {
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, radius * 5.5, 0, Math.PI * 2);
                 ctx.strokeStyle =
-                    `hsla(${this.getNoteHue(star.note || 48)}, 52%, 78%, ${0.10 * life})`;
+                    `hsla(${star.hue ?? this.getNoteHue(star.note || 48)}, 52%, 78%, ${0.13 * life * layerStrength})`;
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
@@ -1437,7 +1439,7 @@ export class VisualEngine {
                 isIdle = this.drawIdle(this.idleCtx, now);
 
                 if (isIdle) {
-                    this.drawMemory(this.idleCtx, now);
+                    this.drawMemory(this.idleCtx, now, 0.34);
                 }
             }
         } catch (error) {
@@ -1459,10 +1461,7 @@ export class VisualEngine {
 
             this.updateActiveBodies(now);
 
-            if (!isIdle) {
-                this.drawMemory(ctx, now);
-            }
-
+            this.drawMemory(ctx, now);
             this.drawActiveBodies(ctx, now);
 
             this.lastFrameError = 0;
