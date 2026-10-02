@@ -50,7 +50,7 @@ function renderSignal(note = null) {
             : String(Math.round(midi.lastControllerValue)).padStart(3, "0");
 
     if (frequency > 0) ui.freq.textContent = Math.round(frequency) + " Hz";
-    ui.led.classList.toggle("on", connected || intensity > 0.01);
+    ui.led.classList.toggle("on", connected);
 }
 
 const INSTRUMENTS = [
@@ -92,14 +92,15 @@ ui.instrument.addEventListener("click", () => {
 setInstrument("synth");
 
 for (const slider of ui.effects) {
-    const type = slider.dataset.effect;
-    const output = slider.parentElement.querySelector(".effect-value");
-    const initial = Number(slider.value) || 0;
+    const type = slider.querySelector('input[type="range"]');
+    const output = slider.querySelector(".effect-value");
 
-    setEffect(type, initial, output);
+    if (!type || !output) continue;
 
-    slider.addEventListener("input", () => {
-        setEffect(type, slider.value, output);
+    setEffect(type.dataset.effect, type.value, output);
+
+    type.addEventListener("input", () => {
+        setEffect(type.dataset.effect, type.value, output);
     });
 }
 
@@ -175,7 +176,7 @@ async function boot() {
 
     visuals.start();
     decay();
-    setStatus("INITIALISATION");
+    setStatus("");
 
     midi = new TouchMeMidiInput(eventBus, event => {
         if (event.type === "connected") {
