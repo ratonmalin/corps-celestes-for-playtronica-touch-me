@@ -6,6 +6,7 @@ export class VisualEngine {
 
         this.active = new Map();
         this.bodyPositions = new Map();
+        this.backgroundStars = this.createBackgroundStars();
         this.memory = [];
         this.running = false;
         this.lastInteraction = performance.now();
@@ -621,6 +622,28 @@ export class VisualEngine {
         }
     }
 
+    drawBackground(ctx, now) {
+        // The background sky is independent from musical memory.
+        // It never disappears when a played body is released.
+        for (const star of this.backgroundStars) {
+            const twinkle =
+                0.82 +
+                0.18 * Math.sin(now / (3200 + star.depth * 1800) + star.phase);
+
+            ctx.beginPath();
+            ctx.arc(
+                star.x,
+                star.y,
+                star.radius * (0.9 + star.depth * 0.5),
+                0,
+                Math.PI * 2
+            );
+            ctx.fillStyle =
+                `rgba(225, 235, 250, ${star.alpha * twinkle})`;
+            ctx.fill();
+        }
+    }
+
     drawMemory(ctx, now, layerStrength = 1) {
         // IMPORTANT: idle state is UI-only. It must never alter star visibility.
         // The memory sky is rendered continuously, including after 15 seconds.
@@ -747,15 +770,15 @@ export class VisualEngine {
             // Stars never reach zero alpha: old memories remain as a faint sky.
             const settling = Math.exp(-age / 8);
             const presence =
-                (0.18 + settling * 0.82) *
+                (0.42 + settling * 0.58) *
                 layerStrength;
 
             const energy = Math.max(0, Math.min(1, star.energy ?? 0.5));
             const radius =
-                0.65 +
+                1.05 +
                 depth * 1.55 +
-                energy * 1.15 +
-                Math.min(1.6, star.duration * 0.30);
+                energy * 1.35 +
+                Math.min(1.8, star.duration * 0.30);
 
             if (energy > 0.45 || depth > 0.72) {
                 ctx.beginPath();
@@ -1460,6 +1483,7 @@ export class VisualEngine {
             ctx.clearRect(0, 0, innerWidth, innerHeight);
 
             this.updateActiveBodies(now);
+            this.drawBackground(ctx, now);
             this.drawMemory(ctx, now);
             this.drawConstellation(ctx, now);
             this.drawActiveBodies(ctx, now);
