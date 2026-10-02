@@ -264,7 +264,7 @@ export class VisualEngine {
 
         this.lastInteraction = performance.now();
 
-        if (!item) return;
+        if (!item || item.releasedAt) return;
 
         item.releasedAt = performance.now();
         item.duration = Math.max(0.05, (item.releasedAt - item.born) / 1000);
