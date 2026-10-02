@@ -252,7 +252,8 @@ export class VisualEngine {
                 Math.cos(event.note * 0.83) * 18,
             vy: this.bodyPositions.get(event.note)?.vy ??
                 Math.sin(event.note * 0.61) * 18,
-            trail: []
+            trail: [],
+            lastFrame: now
         });
     }
 
@@ -1497,8 +1498,10 @@ export class VisualEngine {
             ctx.globalCompositeOperation = "source-over";
             ctx.clearRect(0, 0, innerWidth, innerHeight);
 
-            this.updateActiveBodies(now);
+            // Draw the independent sky first. Physics errors must never
+            // be able to blank the entire celestial field.
             this.drawBackground(ctx, now);
+            this.updateActiveBodies(now);
             this.drawMemory(ctx, now);
             this.drawConstellation(ctx, now);
             this.drawActiveBodies(ctx, now);
