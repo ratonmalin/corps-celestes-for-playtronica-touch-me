@@ -163,14 +163,6 @@ export class TouchMeMidiInput {
                 chordIntervals
             });
 
-            this.onSignal?.({
-                type: "note",
-                value,
-                note: mappedNote,
-                rawNote: data1,
-                channel
-            });
-
             return;
         }
 
