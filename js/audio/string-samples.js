@@ -8,15 +8,68 @@ const manifestCache = new Map();
 const bufferCache = new Map();
 
 export async function loadStringSamples(audioContext) {
+    // Preload a small set of representative string zones after the AudioContext
+    // is unlocked. This removes most of the first-note network/decode latency
+    // without introducing a synthetic replacement for the acoustic instrument.
+    const preloadTargets = {
+        violin: [48, 60, 72],
+        viola: [48, 60, 72],
+        cello: [36, 48, 60]
+    };
+
     await Promise.all(
-        Object.values(SAMPLE_REPOS).map(instrument =>
-            loadManifest(instrument).catch(error => {
-                console.warn("[STRINGS] Sample manifest unavailable:", instrument, error);
-            })
-        )
+        Object.entries(preloadTargets).map(async ([instrument, notes]) => {
+            try {
+                const manifest = await loadManifest(instrument);
+                if (!manifest?.zones?.length) return;
+
+                await Promise.all(
+                    notes.map(note => preloadNearestZone(audioContext, instrument, manifest, note))
+                );
+            } catch (error) {
+                console.warn("[STRINGS] Sample preload unavailable:", instrument, error);
+            }
+        })
     );
 
     return true;
+}
+
+async function preloadNearestZone(audioContext, instrument, manifest, midi) {
+    const candidates = manifest.zones.filter(zone =>
+        midi >= Number(zone.lowPitch ?? -Infinity) &&
+        midi <= Number(zone.highPitch ?? Infinity)
+    );
+
+    const zones = candidates.length ? candidates : manifest.zones;
+    const zone = [...zones].sort((a, b) =>
+        Math.abs(Number(a.rootPitch) - midi) -
+        Math.abs(Number(b.rootPitch) - midi)
+    )[0];
+
+    if (!zone?.file) return null;
+
+    const url =
+        "https://huggingface.co/" +
+        SAMPLE_REPOS[instrument] +
+        "/resolve/main/" +
+        zone.file;
+
+    return loadSampleBuffer(audioContext, url);
+}
+
+async function loadSampleBuffer(audioContext, url) {
+    if (!bufferCache.has(url)) {
+        const response = await fetch(url, { cache: "force-cache" });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} while loading ${url}`);
+        }
+
+        const data = await response.arrayBuffer();
+        bufferCache.set(url, audioContext.decodeAudioData(data));
+    }
+
+    return bufferCache.get(url);
 }
 
 export async function getStringSample(audioContext, instrument, note, velocity = 1) {
@@ -56,20 +109,7 @@ export async function getStringSample(audioContext, instrument, note, velocity =
 
     const cacheKey = url;
 
-    if (!bufferCache.has(cacheKey)) {
-        const response = await fetch(url, { cache: "force-cache" });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status} while loading ${url}`);
-        }
-
-        const data = await response.arrayBuffer();
-        bufferCache.set(
-            cacheKey,
-            audioContext.decodeAudioData(data)
-        );
-    }
-
-    const buffer = await bufferCache.get(cacheKey);
+    const buffer = await loadSampleBuffer(audioContext, cacheKey);
 
     return {
         buffer,
