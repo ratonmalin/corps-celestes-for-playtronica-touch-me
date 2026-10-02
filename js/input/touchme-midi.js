@@ -127,9 +127,7 @@ export class TouchMeMidiInput {
         const channel = status & 0x0f;
 
         if (type === 0xb0 && data1 === 90) {
-            const value = data2 / 127;
-
-            this.lastIntensity.set(channel, value);
+            this.lastIntensity.set(channel, data2 / 127);
             return;
         }
 
