@@ -62,11 +62,10 @@ h1 {
 }
 
 .header-actions {
-    display: grid;
-    grid-template-columns: repeat(4, max-content);
+    display: flex;
     align-items: start;
-    justify-content: end;
-    gap: 0 18px;
+    justify-content: flex-end;
+    gap: 18px;
     min-width: 0;
 }
 
@@ -154,7 +153,7 @@ h1 {
     background: rgba(255,255,255,.3);
 }
 
-.led.on { background: var(--accent); }
+.led.on { background: #52e27a; box-shadow: 0 0 8px rgba(82,226,122,.55); }
 
 .effect-panel {
     position: fixed;
@@ -166,6 +165,12 @@ h1 {
     align-items: flex-start;
     gap: 10px;
     pointer-events: auto;
+}
+
+.effect-panel .scale-control {
+    width: 300px;
+    max-width: 300px;
+    text-align: left;
 }
 
 .instrument-control {
@@ -389,7 +394,7 @@ h1 {
     }
     .scale-control { max-width: none; }
     #instrument { width: 200px; text-align: left; }
-    #scale { width: 230px; }
+    .effect-panel .scale-control { width: 230px; max-width: 230px; }
     .status-bar { top: 62px; right: 16px; gap: 7px; font-size: 9px; }
     .technical {
         left: 16px;
