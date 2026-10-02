@@ -71,7 +71,7 @@ export class AudioEngine {
     }
 
     setInstrument(value) {
-        const allowed = ["synth", "strings", "harp"];
+        const allowed = ["synth", "strings", "harp", "piano", "vibraphone", "celesta"];
         this.instrument = allowed.includes(value) ? value : "synth";
 
         if (this.instrument === "strings" && this.audioContext) {
