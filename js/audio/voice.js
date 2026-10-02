@@ -328,6 +328,19 @@ export class Voice {
 
 
         /*
+         * SATURATION DOUCE
+         *
+         * Toujours présente mais très légère : elle densifie le timbre
+         * sans écraser les harmoniques ni casser l'harmonie entre les voix.
+         */
+        this.saturation = context.createWaveShaper();
+        this.saturation.curve = this.createSoftSaturationCurve(
+            this.instrument === "harp" ? 0.05 : 0.08
+        );
+        this.saturation.oversample = "2x";
+
+
+        /*
          * ENVELOPPE
          */
 
