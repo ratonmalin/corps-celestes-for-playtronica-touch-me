@@ -177,9 +177,108 @@ h1 {
 .effect-controls {
     display: flex;
     align-items: flex-end;
-    gap: 18px;
+    gap: 22px;
     pointer-events: auto;
 }
+
+.effect-slider {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto 14px;
+    column-gap: 10px;
+    align-items: center;
+    width: 128px;
+    color: rgba(255,255,255,.68);
+    font-family: "Roboto", system-ui, sans-serif;
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: .1em;
+    line-height: 1;
+}
+
+.effect-slider > span {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.effect-value {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    color: rgba(255,255,255,.82);
+    font: inherit;
+    letter-spacing: .04em;
+}
+
+.effect-slider input[type="range"] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    height: 14px;
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.effect-slider input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 1px;
+    border: 0;
+    border-radius: 0;
+    background: rgba(255,255,255,.26);
+}
+
+.effect-slider input[type="range"]::-webkit-slider-thumb {
+    width: 7px;
+    height: 7px;
+    margin-top: -3px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,.9);
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.effect-slider input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 1px;
+    border: 0;
+    border-radius: 0;
+    background: rgba(255,255,255,.26);
+}
+
+.effect-slider input[type="range"]::-moz-range-progress {
+    height: 1px;
+    border: 0;
+    border-radius: 0;
+    background: rgba(255,255,255,.62);
+}
+
+.effect-slider input[type="range"]::-moz-range-thumb {
+    width: 7px;
+    height: 7px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,.9);
+}
+
+.effect-slider input[type="range"]:hover::-webkit-slider-runnable-track,
+.effect-slider input[type="range"]:focus-visible::-webkit-slider-runnable-track {
+    background: rgba(255,255,255,.4);
+}
+
+.effect-slider input[type="range"]:focus-visible {
+    outline: none;
+}
+
+.effect-slider input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.15);
+}
+
 
 .technical {
     position: fixed;
@@ -304,7 +403,7 @@ h1 {
     .technical { right: 24px; gap: 14px; font-size: 11px; }
     .effect-panel { left: 24px; bottom: 34px; }
     .instrument-control { width: 260px; max-width: 260px; }
-    .effect-controls { gap: 14px; }
+    .effect-controls { gap: 16px; }
 }
 
 @media (max-width: 700px) {
@@ -335,7 +434,8 @@ h1 {
     .technical input { width: 64px; }
     .effect-panel { left: 16px; bottom: 86px; }
     .instrument-control { width: 230px; max-width: 230px; text-align: left; }
-    .effect-controls { gap: 10px; }
+    .effect-controls { gap: 12px; }
+    .effect-slider { width: 108px; font-size: 8px; }
 }
 
 @media (max-width: 480px) {
