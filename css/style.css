@@ -249,40 +249,48 @@ h1 {
     position: fixed;
     left: 50%;
     top: 50%;
-    z-index: 8;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 18px;
     width: min(38vw, 420px);
-    transform: translate(-50%,-50%);
-    color: rgba(255,255,255,.78);
+    transform: translate(-50%, -50%);
+    color: #ffffff;
     font-family: "Roboto", sans-serif;
-    font-size: 10px;
-    font-weight: 300;
-    letter-spacing: .14em;
+    font-size: clamp(1.8rem, 4vw, 4rem);
+    font-weight: 100;
+    letter-spacing: 0.08em;
+    line-height: 1;
     text-transform: uppercase;
+    white-space: nowrap;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 1.8s ease;
+    transition: opacity 2.2s ease;
 }
 
 .idle-message img {
     display: block;
     width: 100%;
     height: auto;
-    filter: none;
-      transform: rotate(90deg);
+    transform: rotate(90deg);
 }
 
-.idle-message.visible { opacity: .9; }
+.idle-message.visible {
+    opacity: 0.92;
+}
 
 @media (prefers-reduced-motion: reduce) {
-    .idle-message { transition: none; }
+    .idle-message {
+        transition: none;
+    }
 }
 
 @media (max-width: 700px) {
-    .idle-message { width: min(68vw, 340px); gap: 14px; font-size: 8px; }
+    .idle-message {
+        width: min(68vw, 340px);
+        gap: 14px;
+    }
 }
 
 .visual-field {
