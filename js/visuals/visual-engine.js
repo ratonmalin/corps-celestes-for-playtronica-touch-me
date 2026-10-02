@@ -18,6 +18,8 @@ export class VisualEngine {
         this.lastFrameError = 0;
         this.sleepCycle = -1;
         this.sleepMessageIndex = -1;
+        this.idleSnapshot = null;
+        this.wasIdle = false;
         this.interactionCount = 0;
         // Visual palette is intentionally immutable during a session.
         // Changing the musical scale must never recolor existing or new bodies.
@@ -608,7 +610,9 @@ export class VisualEngine {
     }
 
     drawMemory(ctx, now, layerStrength = 1) {
-        const memoryLifetime = 120;
+        // Played stars are the persistent score of the session.
+        // They remain visible until the bounded memory buffer is full.
+        const memoryLifetime = Infinity;
         const pathLifetime = 18;
 
         for (const star of this.memory) {
@@ -1279,6 +1283,41 @@ export class VisualEngine {
         }
     }
 
+    captureIdleSnapshot() {
+        if (!this.canvas || !this.ctx) return;
+
+        const snapshot = document.createElement("canvas");
+        snapshot.width = this.canvas.width;
+        snapshot.height = this.canvas.height;
+
+        const snapshotCtx = snapshot.getContext("2d");
+        if (!snapshotCtx) return;
+
+        snapshotCtx.drawImage(this.canvas, 0, 0);
+        this.idleSnapshot = snapshot;
+    }
+
+    drawIdleSnapshot() {
+        if (!this.ctx || !this.canvas || !this.idleSnapshot) return;
+
+        const ratio = Math.min(
+            Math.max(window.devicePixelRatio || 1, 1),
+            2
+        );
+
+        this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        this.ctx.globalAlpha = 1;
+        this.ctx.globalCompositeOperation = "source-over";
+        this.ctx.clearRect(0, 0, innerWidth, innerHeight);
+        this.ctx.drawImage(
+            this.idleSnapshot,
+            0,
+            0,
+            this.idleSnapshot.width / ratio,
+            this.idleSnapshot.height / ratio
+        );
+    }
+
     frame() {
         if (!this.running) return;
 
@@ -1294,12 +1333,19 @@ export class VisualEngine {
                 2
             );
 
-            /*
-             * During idle, leave the existing canvas pixels untouched.
-             * The background therefore freezes on the exact last frame:
-             * no fade, no replacement constellation, no animation.
-             */
-            if (!idle) {
+            if (idle) {
+                if (!this.wasIdle) {
+                    // Freeze the exact constellation currently visible.
+                    // Idle must never replace it with a second visual scene.
+                    this.captureIdleSnapshot();
+                    this.wasIdle = true;
+                }
+
+                this.drawIdleSnapshot();
+            } else {
+                this.wasIdle = false;
+                this.idleSnapshot = null;
+
                 ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
                 ctx.globalAlpha = 1;
                 ctx.globalCompositeOperation = "source-over";
