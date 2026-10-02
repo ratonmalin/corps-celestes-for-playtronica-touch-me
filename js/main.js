@@ -10,7 +10,6 @@ const ui = {
     fullscreen: $("fullscreen"),
     status: $("status"),
     led: $("led"),
-    cc: $("cc-value"),
     freq: $("freq"),
     sensitivity: $("sensitivity"),
     sensOut: $("sens-out"),
@@ -42,20 +41,13 @@ function setStatus(text) {
     ui.status.textContent = text;
 }
 
-function renderSignal(note = null, touchIntensity = null) {
+function renderSignal(note = null) {
     const frequency = noteFrequency(note);
 
-    const displayIntensity = touchIntensity != null
-        ? clamp(touchIntensity)
-        : midi?.lastControllerValue == null
-            ? 0
-            : clamp(midi.lastControllerValue / 127);
+    if (frequency > 0) {
+        ui.freq.textContent = Math.round(frequency) + " Hz";
+    }
 
-    const intensityPercent = Math.round(displayIntensity * 100);
-
-    ui.cc.textContent = intensityPercent + "%";
-
-    if (frequency > 0) ui.freq.textContent = Math.round(frequency) + " Hz";
     ui.led.classList.toggle("on", connected);
 }
 
@@ -149,13 +141,15 @@ ui.fullscreen.addEventListener("click", async () => {
 });
 
 document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState !== "visible") {
-        exitFullscreenSafely();
+    if (document.visibilityState !== "visible" && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
     }
 });
 
 window.addEventListener("pagehide", () => {
-    exitFullscreenSafely();
+    if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+    }
 });
 
 document.addEventListener("fullscreenchange", () => {
@@ -177,10 +171,6 @@ ui.sensitivity.addEventListener("input", () => {
 
 eventBus.on("noteon", event => {
     renderSignal(event.note);
-});
-
-eventBus.on("noteoff", () => {
-    renderSignal();
 });
 
 function resetVolume() {
@@ -213,8 +203,8 @@ async function boot() {
             ui.led.classList.remove("on");
             return;
         }
-        if (event.type === "intensity" || event.type === "note") {
-            renderSignal(event.note, event.type === "intensity" ? event.value / (midi?.sensitivity || 1) : null);
+        if (event.type === "note") {
+            renderSignal(event.note);
         }
     });
 
