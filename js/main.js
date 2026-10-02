@@ -185,10 +185,9 @@ async function boot() {
             return;
         }
         if (event.type === "status") {
-            if (!connected) {
-                setStatus("");
-                ui.led.classList.remove("on");
-            }
+            connected = false;
+            setStatus("");
+            ui.led.classList.remove("on");
             return;
         }
         if (event.type === "intensity" || event.type === "note") {
