@@ -3,13 +3,10 @@ export class VisualEngine {
         this.eventBus = eventBus;
         this.canvas = null;
         this.ctx = null;
-        this.idleCanvas = null;
-        this.idleCtx = null;
 
         this.active = new Map();
         this.bodyPositions = new Map();
         this.memory = [];
-        this.idleBodies = [];
         this.running = false;
         this.lastInteraction = performance.now();
         this.lastBloom = 0;
@@ -42,18 +39,11 @@ export class VisualEngine {
         this.canvas.setAttribute("aria-hidden", "true");
         document.body.prepend(this.canvas);
 
-        this.idleCanvas = document.createElement("canvas");
-        this.idleCanvas.className = "idle-field";
-        this.idleCanvas.setAttribute("aria-hidden", "true");
-        document.body.append(this.idleCanvas);
-
         this.ctx = this.canvas.getContext("2d");
-        this.idleCtx = this.idleCanvas.getContext("2d");
         this.resize();
 
         window.addEventListener("resize", this.handleResize);
 
-        this.createIdleBodies();
         this.running = true;
         requestAnimationFrame(this.frame);
     }
@@ -88,25 +78,7 @@ export class VisualEngine {
         this.canvas.style.width = width + "px";
         this.canvas.style.height = height + "px";
 
-        if (this.idleCanvas) {
-            this.idleCanvas.width = Math.floor(width * ratio);
-            this.idleCanvas.height = Math.floor(height * ratio);
-            this.idleCanvas.style.width = width + "px";
-            this.idleCanvas.style.height = height + "px";
-        }
-
         this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        this.idleCtx?.setTransform(ratio, 0, 0, ratio, 0, 0);
-    }
-
-    createIdleBodies() {
-        this.idleBodies = Array.from({ length: 12 }, (_, index) => ({
-            angle: index * (Math.PI * 2 / 12),
-            radius: 105 + index * 46,
-            speed: 0.014 + index * 0.0028,
-            size: 2.8 + (index % 4) * 1.1,
-            phase: index * 1.37
-        }));
     }
 
     getBodyId(event) {
@@ -774,27 +746,27 @@ export class VisualEngine {
         }
     }
 
-    drawIdle(ctx, now) {
+    drawIdle(now) {
         const idle = now - this.lastInteraction > 15000;
         const idleMessage = document.getElementById("idle-message");
         const idleMessageText = document.getElementById("idle-message-text");
         const idleHands = document.getElementById("idle-hands");
 
-        const elapsed = (now - this.lastInteraction) / 1000;
-        const sleepElapsed = Math.max(0, elapsed - 15);
-
-        // The galaxy is a permanent background layer. It must not depend on
-        // whether a note is currently active.
         if (!idle) {
             this.sleepCycle = -1;
 
             if (idleMessage) {
                 idleMessage.classList.remove("visible");
             }
+
             if (idleHands) {
                 idleHands.classList.remove("visible");
             }
-        } else if (this.sleepCycle === -1) {
+
+            return false;
+        }
+
+        if (this.sleepCycle === -1) {
             this.sleepCycle = 0;
 
             const messages = [
@@ -810,99 +782,17 @@ export class VisualEngine {
                 idleMessageText.textContent =
                     messages[this.sleepMessageIndex];
             }
+        }
 
-            if (idleMessage) {
-                idleMessage.classList.add("visible");
-            }
-            if (idleHands) {
-                idleHands.classList.add("visible");
-            }
-        } else if (idleMessage) {
+        if (idleMessage) {
             idleMessage.classList.add("visible");
-            if (idleHands) {
-                idleHands.classList.add("visible");
-            }
         }
 
-        const elapsedAbsolute = now / 1000;
-        const points = [];
-
-        for (let index = 0; index < this.idleBodies.length; index++) {
-            const body = this.idleBodies[index];
-            const angle =
-                body.angle +
-                elapsedAbsolute * body.speed +
-                Math.sin(elapsedAbsolute * 0.13 + body.phase) * 0.20;
-
-            const x =
-                innerWidth * (0.08 + (index % 4) * 0.28) +
-                Math.sin(elapsedAbsolute * 0.11 + body.phase) * 55;
-            const y =
-                innerHeight * (0.16 + Math.floor(index / 4) * 0.34) +
-                Math.cos(angle) * 48;
-
-            // Keep these points readable during interaction. The
-            // sleep message is the only thing that changes with idle state.
-            const alpha =
-                0.28 +
-                0.08 * Math.sin(elapsedAbsolute * 0.55 + body.phase);
-
-            const hue = (205 + body.phase * 58) % 360;
-            points.push({ x, y, hue, body, alpha });
-
-            ctx.beginPath();
-            ctx.arc(x, y, body.size * 8, 0, Math.PI * 2);
-            ctx.fillStyle =
-                "hsla(" +
-                hue +
-                ", 65%, 75%, " +
-                (alpha * 0.10) +
-                ")";
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.arc(x, y, body.size * 1.35, 0, Math.PI * 2);
-            ctx.fillStyle =
-                "hsla(" +
-                hue +
-                ", 62%, 82%, " +
-                alpha +
-                ")";
-            ctx.fill();
+        if (idleHands) {
+            idleHands.classList.add("visible");
         }
 
-        for (let i = 0; i < points.length; i++) {
-            let nearest = null;
-            let nearestDistance = Infinity;
-
-            for (let j = 0; j < points.length; j++) {
-                if (i === j) continue;
-
-                const distance = Math.hypot(
-                    points[i].x - points[j].x,
-                    points[i].y - points[j].y
-                );
-
-                if (distance < nearestDistance) {
-                    nearestDistance = distance;
-                    nearest = points[j];
-                }
-            }
-
-            if (!nearest || nearestDistance > 360) continue;
-
-            ctx.beginPath();
-            ctx.moveTo(points[i].x, points[i].y);
-            ctx.lineTo(nearest.x, nearest.y);
-            ctx.strokeStyle =
-                "rgba(175, 195, 225, " +
-                (0.16 * points[i].alpha * (1 - nearestDistance / 360)) +
-                ")";
-            ctx.lineWidth = 0.9;
-            ctx.stroke();
-        }
-
-        return idle;
+        return true;
     }
 
     indexHue(phase) {
@@ -1422,47 +1312,21 @@ export class VisualEngine {
 
         const now = performance.now();
 
-        // Idle rendering is isolated from the main visual canvas. This means
-        // the idle prompt remains visible even if a main-canvas effect fails.
-        let isIdle = false;
-
-        try {
-            if (this.idleCtx) {
-                const ratio = Math.min(
-                    Math.max(window.devicePixelRatio || 1, 1),
-                    2
-                );
-                this.idleCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
-                this.idleCtx.globalAlpha = 1;
-                this.idleCtx.globalCompositeOperation = "source-over";
-                this.idleCtx.clearRect(0, 0, innerWidth, innerHeight);
-                isIdle = this.drawIdle(this.idleCtx, now);
-
-                if (isIdle) {
-                    this.drawMemory(this.idleCtx, now, 0.34);
-                }
-            }
-        } catch (error) {
-            if (now - this.lastFrameError > 2000) {
-                console.warn("[IDLE VISUALS] Frame recovered:", error);
-                this.lastFrameError = now;
-            }
-        }
-
         try {
             const ratio = Math.min(
                 Math.max(window.devicePixelRatio || 1, 1),
                 2
             );
+
             ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
             ctx.globalAlpha = 1;
             ctx.globalCompositeOperation = "source-over";
             ctx.clearRect(0, 0, innerWidth, innerHeight);
 
             this.updateActiveBodies(now);
-
             this.drawMemory(ctx, now);
             this.drawActiveBodies(ctx, now);
+            this.drawIdle(now);
 
             this.lastFrameError = 0;
         } catch (error) {
@@ -1481,13 +1345,6 @@ export class VisualEngine {
                 ctx.globalAlpha = 1;
                 ctx.globalCompositeOperation = "source-over";
                 ctx.setLineDash([]);
-
-                if (this.idleCtx) {
-                    this.idleCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
-                    this.idleCtx.globalAlpha = 1;
-                    this.idleCtx.globalCompositeOperation = "source-over";
-                    this.idleCtx.setLineDash([]);
-                }
             } catch {
                 // Ignore canvas recovery errors and keep the loop alive.
             }
