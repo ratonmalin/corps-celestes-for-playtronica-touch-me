@@ -260,7 +260,7 @@ h1 {
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 2.2s ease;
+    transition: opacity 2.8s ease;
 }
 
 #idle-message-text {
@@ -286,7 +286,7 @@ h1 {
     transform: translate(-50%, -62%) rotate(90deg);
     pointer-events: none;
     opacity: 0;
-    transition: opacity 2.2s ease;
+    transition: opacity 2.8s ease;
 }
 
 .idle-hands.visible {
