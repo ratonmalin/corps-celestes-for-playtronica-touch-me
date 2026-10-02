@@ -46,10 +46,12 @@ export class MobileTouchInput {
         document.addEventListener("pointermove", this.handlePointerMove, { passive: false });
         document.addEventListener("pointerup", this.handlePointerUp, { passive: false });
         document.addEventListener("pointercancel", this.handlePointerUp, { passive: false });
-        document.addEventListener("touchstart", this.handleTouchStart, { passive: false });
-        document.addEventListener("touchmove", this.handleTouchMove, { passive: false });
-        document.addEventListener("touchend", this.handleTouchEnd, { passive: false });
-        document.addEventListener("touchcancel", this.handleTouchEnd, { passive: false });
+        if (!("PointerEvent" in window)) {
+            document.addEventListener("touchstart", this.handleTouchStart, { passive: false });
+            document.addEventListener("touchmove", this.handleTouchMove, { passive: false });
+            document.addEventListener("touchend", this.handleTouchEnd, { passive: false });
+            document.addEventListener("touchcancel", this.handleTouchEnd, { passive: false });
+        }
         window.addEventListener("blur", this.releaseAll);
         document.addEventListener("visibilitychange", this.releaseAll);
 
