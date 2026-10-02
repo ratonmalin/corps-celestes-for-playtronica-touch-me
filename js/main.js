@@ -8,7 +8,6 @@ const $ = id => document.getElementById(id);
 const ui = {
     fullscreen: $("fullscreen"),
     status: $("status"),
-    device: $("device"),
     led: $("led"),
     cc: $("cc-value"),
     freq: $("freq"),
@@ -19,7 +18,6 @@ const ui = {
     scale: $("scale"),
     effects: [...document.querySelectorAll(".effect-slider")],
     instrument: $("instrument"),
-    arpeggiator: $("arpeggiator")
 };
 
 const eventBus = new EventBus();
@@ -76,11 +74,6 @@ function setInstrument(value) {
     ui.instrument.dataset.instrument = id;
 }
 
-function setArpeggiator(enabled) {
-    audio.setArpeggiator(enabled);
-    ui.arpeggiator.textContent = enabled ? "ARPÉGIATEUR · ON" : "ARPÉGIATEUR · OFF";
-}
-
 function setEffect(type, value, output) {
     const normalized = clamp(Number(value));
     output.textContent = Math.round(normalized * 100) + "%";
@@ -95,11 +88,7 @@ ui.instrument.addEventListener("click", () => {
     setInstrument(INSTRUMENTS[instrumentIndex][0]);
 });
 
-ui.arpeggiator.addEventListener("click", () => {
-    setArpeggiator(!audio.arpeggiatorEnabled);
-});
 
-setArpeggiator(false);
 setInstrument("synth");
 
 for (const slider of ui.effects) {
@@ -191,13 +180,15 @@ async function boot() {
     midi = new TouchMeMidiInput(eventBus, event => {
         if (event.type === "connected") {
             connected = true;
-            ui.device.textContent = String(event.device || "TOUCHME").toUpperCase();
-            setStatus("CAPTEUR CONNECTÉ · EN ATTENTE");
+            setStatus("CAPTEUR CONNECTÉ");
             renderSignal();
             return;
         }
         if (event.type === "status") {
-            if (!connected) setStatus(event.status);
+            if (!connected) {
+                setStatus("");
+                ui.led.classList.remove("on");
+            }
             return;
         }
         if (event.type === "intensity" || event.type === "note") {
