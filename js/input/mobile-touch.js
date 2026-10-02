@@ -121,8 +121,7 @@ export class MobileTouchInput {
             channel: 0,
             source: "touch",
             timestamp: performance.now(),
-            touchIntensity: intensity,
-            chordIntervals: getDiatonicTriadIntervals(note, this.scaleIndex)
+            touchIntensity: intensity
         });
 
         this.eventBus.emit({
@@ -269,28 +268,3 @@ export class MobileTouchInput {
     }
 }
 
-function getDiatonicTriadIntervals(note, scaleIndex) {
-    const scales = [
-        [0, 2, 4, 7, 9],
-        [0, 3, 5, 7, 10],
-        [0, 2, 5, 7, 9]
-    ];
-
-    const scale = scales[Math.max(0, Math.min(2, Number(scaleIndex) || 0))];
-    const pitchClass = ((note - 24) % 12 + 12) % 12;
-    const degree = scale.indexOf(pitchClass);
-
-    if (degree < 0) return [0, scale[1], scale[2]];
-
-    const intervals = [];
-    for (let step = 0; step < 3; step++) {
-        const target = degree + step * 2;
-        const octave = Math.floor(target / scale.length);
-        const targetIndex = target % scale.length;
-        intervals.push(
-            scale[targetIndex] + octave * 12 - scale[degree]
-        );
-    }
-
-    return intervals;
-}
