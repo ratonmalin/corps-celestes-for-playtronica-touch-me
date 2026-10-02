@@ -314,7 +314,10 @@ export class VisualEngine {
     }
 
     getSystemCenter() {
-        if (this.active.size === 0) {
+        const liveItems = [...this.active.values()]
+            .filter(item => !item.releasedAt);
+
+        if (liveItems.length === 0) {
             return {
                 x: innerWidth * 0.5,
                 y: innerHeight * 0.47
@@ -326,7 +329,7 @@ export class VisualEngine {
 
         let count = 0;
 
-        for (const item of this.active.values()) {
+        for (const item of liveItems) {
             const itemX = Number.isFinite(item.x)
                 ? item.x
                 : innerWidth * 0.5;
@@ -354,7 +357,8 @@ export class VisualEngine {
 
     updateActiveBodies(now) {
         const items = [...this.active.values()];
-        const count = items.length;
+        const liveItems = items.filter(item => !item.releasedAt);
+        const count = liveItems.length;
         const center = this.getSystemCenter();
         const elapsed = now / 1000;
 
