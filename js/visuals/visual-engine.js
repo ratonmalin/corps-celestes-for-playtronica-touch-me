@@ -1311,6 +1311,7 @@ export class VisualEngine {
         if (!ctx) return;
 
         const now = performance.now();
+        const idle = now - this.lastInteraction > 15000;
 
         try {
             const ratio = Math.min(
@@ -1318,14 +1319,22 @@ export class VisualEngine {
                 2
             );
 
-            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-            ctx.globalAlpha = 1;
-            ctx.globalCompositeOperation = "source-over";
-            ctx.clearRect(0, 0, innerWidth, innerHeight);
+            /*
+             * During idle, leave the existing canvas pixels untouched.
+             * The background therefore freezes on the exact last frame:
+             * no fade, no replacement constellation, no animation.
+             */
+            if (!idle) {
+                ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                ctx.globalAlpha = 1;
+                ctx.globalCompositeOperation = "source-over";
+                ctx.clearRect(0, 0, innerWidth, innerHeight);
 
-            this.updateActiveBodies(now);
-            this.drawMemory(ctx, now);
-            this.drawActiveBodies(ctx, now);
+                this.updateActiveBodies(now);
+                this.drawMemory(ctx, now);
+                this.drawActiveBodies(ctx, now);
+            }
+
             this.drawIdle(now);
 
             this.lastFrameError = 0;
