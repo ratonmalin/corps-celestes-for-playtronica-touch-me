@@ -46,14 +46,13 @@ function setStatus(text) {
 function renderSignal(note = null, touchIntensity = null) {
     const frequency = noteFrequency(note);
 
-    const controllerValue =
-        touchIntensity != null
-            ? Math.round(clamp(touchIntensity) * 127)
-            : midi?.lastControllerValue == null
-                ? 90
-                : Math.round(midi.lastControllerValue);
+    const intensityPercent = touchIntensity != null
+        ? Math.round(clamp(touchIntensity) * 100)
+        : midi?.lastControllerValue == null
+            ? 0
+            : Math.round(clamp(midi.lastControllerValue / 127) * 100);
 
-    ui.cc.textContent = String(controllerValue).padStart(3, "0");
+    ui.cc.textContent = intensityPercent + "%";
 
     if (frequency > 0) ui.freq.textContent = Math.round(frequency) + " Hz";
     ui.led.classList.toggle("on", connected);
