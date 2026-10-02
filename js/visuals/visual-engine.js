@@ -366,17 +366,16 @@ export class VisualEngine {
         for (const item of items) {
             const age = (now - item.born) / 1000;
             const noteProfile = this.getNoteProfile(item.note);
+            const dt = Math.min(
+                0.033,
+                Math.max(0.008, (now - (item.lastFrame ?? now)) / 1000)
+            );
             const baseX =
                 innerWidth * (0.5 + Math.sin(item.note * 1.73) * 0.32);
             const baseY =
                 innerHeight * (0.47 + Math.cos(item.note * 1.17) * 0.25);
 
             if (count >= 2) {
-                const dt = Math.min(
-                    0.033,
-                    Math.max(0.008, (now - (item.lastFrame ?? now)) / 1000)
-                );
-
                 let ax = 0;
                 let ay = 0;
 
