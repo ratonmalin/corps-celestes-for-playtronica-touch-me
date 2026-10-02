@@ -3,6 +3,8 @@ export class VisualEngine {
         this.eventBus = eventBus;
         this.canvas = null;
         this.ctx = null;
+        this.idleCanvas = null;
+        this.idleCtx = null;
 
         this.active = new Map();
         this.bodyPositions = new Map();
@@ -40,7 +42,13 @@ export class VisualEngine {
         this.canvas.setAttribute("aria-hidden", "true");
         document.body.prepend(this.canvas);
 
+        this.idleCanvas = document.createElement("canvas");
+        this.idleCanvas.className = "idle-field";
+        this.idleCanvas.setAttribute("aria-hidden", "true");
+        document.body.append(this.idleCanvas);
+
         this.ctx = this.canvas.getContext("2d");
+        this.idleCtx = this.idleCanvas.getContext("2d");
         this.resize();
 
         window.addEventListener("resize", this.handleResize);
@@ -80,7 +88,15 @@ export class VisualEngine {
         this.canvas.style.width = width + "px";
         this.canvas.style.height = height + "px";
 
+        if (this.idleCanvas) {
+            this.idleCanvas.width = Math.floor(width * ratio);
+            this.idleCanvas.height = Math.floor(height * ratio);
+            this.idleCanvas.style.width = width + "px";
+            this.idleCanvas.style.height = height + "px";
+        }
+
         this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        this.idleCtx?.setTransform(ratio, 0, 0, ratio, 0, 0);
     }
 
     createIdleBodies() {
@@ -1400,11 +1416,36 @@ export class VisualEngine {
 
         const now = performance.now();
 
+        // Idle rendering is isolated from the main visual canvas. This means
+        // the idle prompt remains visible even if a main-canvas effect fails.
         try {
+            if (this.idleCtx) {
+                const ratio = Math.min(
+                    Math.max(window.devicePixelRatio || 1, 1),
+                    2
+                );
+                this.idleCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                this.idleCtx.clearRect(0, 0, innerWidth, innerHeight);
+                this.drawIdle(this.idleCtx, now);
+            }
+        } catch (error) {
+            if (now - this.lastFrameError > 2000) {
+                console.warn("[IDLE VISUALS] Frame recovered:", error);
+                this.lastFrameError = now;
+            }
+        }
+
+        try {
+            const ratio = Math.min(
+                Math.max(window.devicePixelRatio || 1, 1),
+                2
+            );
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = "source-over";
             ctx.clearRect(0, 0, innerWidth, innerHeight);
 
             this.updateActiveBodies(now);
-            this.drawIdle(ctx, now);
             this.drawMemory(ctx, now);
             this.drawActiveBodies(ctx, now);
 
@@ -1425,6 +1466,13 @@ export class VisualEngine {
                 ctx.globalAlpha = 1;
                 ctx.globalCompositeOperation = "source-over";
                 ctx.setLineDash([]);
+
+                if (this.idleCtx) {
+                    this.idleCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                    this.idleCtx.globalAlpha = 1;
+                    this.idleCtx.globalCompositeOperation = "source-over";
+                    this.idleCtx.setLineDash([]);
+                }
             } catch {
                 // Ignore canvas recovery errors and keep the loop alive.
             }
