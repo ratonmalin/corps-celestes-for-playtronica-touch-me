@@ -336,7 +336,34 @@ h1 {
     pointer-events: none;
 }
 
-@media (max-width: 900px) {
+
+/* Idle is a presentation state, not a visual reset. */
+.app > .header,
+.status-bar,
+.effect-panel,
+.technical {
+    transition: opacity 1.8s ease, transform 1.8s ease;
+}
+
+.is-idle .app > .header {
+    opacity: .16;
+    transform: translateY(-4px);
+}
+
+.is-idle .status-bar {
+    opacity: .16;
+}
+
+.is-idle .effect-panel,
+.is-idle .technical {
+    opacity: .10;
+    pointer-events: none;
+}
+
+.is-idle .header-actions {
+    pointer-events: none;
+}
+\n@media (max-width: 900px) {
     .app { padding: 24px 24px 100px; }
     .status-bar { top: 67px; right: 24px; font-size: 10px; }
     .technical { right: 24px; gap: 14px; font-size: 11px; }
