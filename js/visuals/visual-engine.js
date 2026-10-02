@@ -601,15 +601,17 @@ export class VisualEngine {
             }
 
             if (item.releasedAt) {
-                // Released bodies are part of the permanent celestial field.
-                // They settle toward a faint floor instead of disappearing.
-                // This is deliberately independent from the 15s idle state.
-                const releaseAge =
-                    Math.max(0, (now - item.releasedAt) / 1000);
-                const settled =
-                    0.28 + 0.72 * Math.exp(-releaseAge / 3.8);
+                const releaseProgress =
+                    Math.min(1, (now - item.releasedAt) / 4.2);
 
-                item.releaseLife = settled;
+                item.releaseLife =
+                    1 -
+                    (releaseProgress * releaseProgress *
+                        (3 - 2 * releaseProgress));
+
+                if (releaseProgress >= 1) {
+                    this.active.delete(item.id);
+                }
             } else {
                 item.releaseLife = 1;
             }
