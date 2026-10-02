@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Corps Célestes · instrument musical expérimental pour Playtronica TouchMe.">
     <title>Corps Célestes</title>
-    <link rel="stylesheet" href="./css/style.css?v=20261002-28">
+    <link rel="stylesheet" href="./css/style.css?v=20261002-29">
 </head>
 <body autocomplete="off">
     <main class="app">
@@ -21,11 +21,6 @@
             </div>
 
             <div class="header-actions">
-                <select id="instrument" class="scale-control" aria-label="Choisir l'instrument">
-                    <option value="synth">INSTRUMENT · SYNTHÉTIQUE</option>
-                    <option value="strings">INSTRUMENT · ENSEMBLE DE VIOLONS</option>
-                    <option value="harp">INSTRUMENT · HARPE</option>
-                </select>
                 <select id="scale" class="scale-control" aria-label="Changer de gamme">
                     <option value="0">GAMME · PENTATONIQUE MAJEURE</option>
                     <option value="1">GAMME · PENTATONIQUE MINEURE</option>
@@ -43,7 +38,13 @@
             <span id="device">AUCUN APPAREIL</span>
         </div>
 
-        <div class="effect-controls" aria-label="Effets audio">
+        <div class="effect-panel">
+            <select id="instrument" class="scale-control instrument-control" aria-label="Choisir l'instrument">
+                <option value="synth">INSTRUMENT · SYNTHÉTIQUE</option>
+                <option value="strings">INSTRUMENT · ENSEMBLE DE VIOLONS</option>
+                <option value="harp">INSTRUMENT · HARPE</option>
+            </select>
+            <div class="effect-controls" aria-label="Effets audio">
             <label class="effect-slider">
                 <span>REVERB</span>
                 <output class="effect-value">58%</output>
@@ -59,6 +60,7 @@
                 <output class="effect-value">0%</output>
                 <input type="range" min="0" max="1" step=".01" value="0" data-effect="echo" aria-label="Echo">
             </label>
+            </div>
         </div>
 
         <div class="technical">
@@ -77,6 +79,6 @@
         </div>
     </main>
 
-    <script type="module" src="./js/main.js?v=20261002-28"></script>
+    <script type="module" src="./js/main.js?v=20261002-29"></script>
 </body>
 </html>
