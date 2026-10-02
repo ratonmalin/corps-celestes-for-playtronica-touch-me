@@ -2,7 +2,7 @@ import { EventBus } from "./core/event-bus.js";
 import { AudioEngine } from "./audio/audio.js?v=20261002-51";
 import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-45";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
-import { MobileTouchInput } from "./input/mobile-touch.js";
+import { MobileTouchInput } from "./input/mobile-touch.js?v=20261002-51";
 
 const $ = id => document.getElementById(id);
 
