@@ -18,8 +18,6 @@ export class VisualEngine {
         this.lastFrameError = 0;
         this.sleepCycle = -1;
         this.sleepMessageIndex = -1;
-        this.idleSnapshot = null;
-        this.wasIdle = false;
         this.interactionCount = 0;
         // Visual palette is intentionally immutable during a session.
         // Changing the musical scale must never recolor existing or new bodies.
@@ -270,7 +268,7 @@ export class VisualEngine {
             color: item.hue,
             duration: item.duration,
             energy: item.velocity,
-            lifetime: Math.max(12, Math.min(120, item.duration * 12)),
+            lifetime: Math.max(300, Math.min(1800, item.duration * 60)),
             path: (item.trail ?? []).map(point => ({
                 x: point.x,
                 y: point.y,
@@ -717,6 +715,58 @@ export class VisualEngine {
                 ctx.strokeStyle =
                     `rgba(${this.hexToRgba(star.color, 0.13 * life * layerStrength)})`;
                 ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+    }
+
+    drawConstellation(ctx, now, layerStrength = 1) {
+        const stars = this.memory.filter(star => {
+            const age = (now - star.born) / 1000;
+            return age < star.lifetime;
+        });
+
+        if (stars.length < 2) return;
+
+        const linked = new Set();
+
+        for (let i = 0; i < stars.length; i++) {
+            const a = stars[i];
+            const ageA = (now - a.born) / 1000;
+            const lifeA = Math.max(0, 1 - ageA / a.lifetime);
+
+            const neighbors = stars
+                .filter((_, index) => index !== i)
+                .map(b => ({
+                    star: b,
+                    distance: Math.hypot(b.x - a.x, b.y - a.y)
+                }))
+                .filter(entry => entry.distance < 340)
+                .sort((x, y) => x.distance - y.distance)
+                .slice(0, 2);
+
+            for (const { star: b, distance } of neighbors) {
+                const pairKey = [a.born, b.born].sort().join(":");
+                if (linked.has(pairKey)) continue;
+                linked.add(pairKey);
+
+                const ageB = (now - b.born) / 1000;
+                const lifeB = Math.max(0, 1 - ageB / b.lifetime);
+                const proximity = 1 - distance / 340;
+                const alpha =
+                    0.11 *
+                    layerStrength *
+                    lifeA *
+                    lifeB *
+                    proximity;
+
+                if (alpha <= 0) continue;
+
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.strokeStyle = `rgba(205, 220, 240, ${alpha})`;
+                ctx.lineWidth = 0.75;
                 ctx.stroke();
             }
         }
@@ -1280,41 +1330,6 @@ export class VisualEngine {
         }
     }
 
-    captureIdleSnapshot() {
-        if (!this.canvas || !this.ctx) return;
-
-        const snapshot = document.createElement("canvas");
-        snapshot.width = this.canvas.width;
-        snapshot.height = this.canvas.height;
-
-        const snapshotCtx = snapshot.getContext("2d");
-        if (!snapshotCtx) return;
-
-        snapshotCtx.drawImage(this.canvas, 0, 0);
-        this.idleSnapshot = snapshot;
-    }
-
-    drawIdleSnapshot() {
-        if (!this.ctx || !this.canvas || !this.idleSnapshot) return;
-
-        const ratio = Math.min(
-            Math.max(window.devicePixelRatio || 1, 1),
-            2
-        );
-
-        this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        this.ctx.globalAlpha = 1;
-        this.ctx.globalCompositeOperation = "source-over";
-        this.ctx.clearRect(0, 0, innerWidth, innerHeight);
-        this.ctx.drawImage(
-            this.idleSnapshot,
-            0,
-            0,
-            this.idleSnapshot.width / ratio,
-            this.idleSnapshot.height / ratio
-        );
-    }
-
     frame() {
         if (!this.running) return;
 
@@ -1330,29 +1345,15 @@ export class VisualEngine {
                 2
             );
 
-            if (idle) {
-                if (!this.wasIdle) {
-                    // Freeze the exact constellation currently visible.
-                    // Idle must never replace it with a second visual scene.
-                    this.captureIdleSnapshot();
-                    this.wasIdle = true;
-                }
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = "source-over";
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
 
-                this.drawIdleSnapshot();
-            } else {
-                this.wasIdle = false;
-                this.idleSnapshot = null;
-
-                ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-                ctx.globalAlpha = 1;
-                ctx.globalCompositeOperation = "source-over";
-                ctx.clearRect(0, 0, innerWidth, innerHeight);
-
-                this.updateActiveBodies(now);
-                this.drawMemory(ctx, now);
-                this.drawActiveBodies(ctx, now);
-            }
-
+            this.updateActiveBodies(now);
+            this.drawMemory(ctx, now);
+            this.drawConstellation(ctx, now);
+            this.drawActiveBodies(ctx, now);
             this.drawIdle(now);
 
             this.lastFrameError = 0;
