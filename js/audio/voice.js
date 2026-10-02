@@ -29,6 +29,8 @@ export class Voice {
         this.oscillatorB = null;
         this.oscillatorC = null;
         this.sampleSources = [];
+        this.stringTransient = null;
+        this.stringTransientGain = null;
 
         this.oscillatorAGain = null;
         this.oscillatorBGain = null;
@@ -586,6 +588,31 @@ export class Voice {
             { instrument: "violin", note: this.baseNote + intervals[2] + 12, pan: 0.18, gain: 0.42 }
         ];
 
+        // Immediate bow transient: the sampled violin may still be waiting for
+        // network/decode. This exact-pitch micro-layer makes the attack audible
+        // immediately, then yields to the real violin sample as soon as it arrives.
+        const violinNote = this.baseNote + intervals[2] + 12;
+        const violinFrequency = 440 * Math.pow(2, (violinNote - 69) / 12);
+        const transient = context.createOscillator();
+        const transientGain = context.createGain();
+        const transientPan = context.createStereoPanner();
+        const transientWave = this.createPeriodicWave(context, [0, 0.62, 0.28, 0.12, 0.055, 0.025]);
+        const transientNow = context.currentTime;
+        transient.setPeriodicWave(transientWave);
+        transient.frequency.setValueAtTime(violinFrequency, transientNow);
+        transient.detune.setValueAtTime(-1.5, transientNow);
+        transientGain.gain.setValueAtTime(0.0001, transientNow);
+        transientGain.gain.exponentialRampToValueAtTime(0.022 * this.velocity, transientNow + 0.008);
+        transientGain.gain.exponentialRampToValueAtTime(0.0001, transientNow + 0.16);
+        transientPan.pan.setValueAtTime(0.18, transientNow);
+        transient.connect(transientGain);
+        transientGain.connect(transientPan);
+        transientPan.connect(this.filter);
+        transient.start(transientNow);
+        transient.stop(transientNow + 0.19);
+        this.stringTransient = transient;
+        this.stringTransientGain = transientGain;
+
         // Fetch/decode all layers concurrently. Each layer starts as soon as
         // its sample is ready instead of waiting for the slowest instrument.
         targets.forEach(async target => {
@@ -628,6 +655,19 @@ export class Voice {
                 source.start(now);
 
                 this.sampleSources.push({ source, layerGain, layerPan });
+
+                if (target.instrument === "violin" && this.stringTransientGain) {
+                    const fadeNow = context.currentTime;
+                    this.stringTransientGain.gain.cancelScheduledValues(fadeNow);
+                    this.stringTransientGain.gain.setValueAtTime(
+                        Math.max(this.stringTransientGain.gain.value, 0.0001),
+                        fadeNow
+                    );
+                    this.stringTransientGain.gain.exponentialRampToValueAtTime(
+                        0.0001,
+                        fadeNow + 0.045
+                    );
+                }
             } catch (error) {
                 console.warn("[STRINGS] Sample layer unavailable:", target.instrument, error);
             }
@@ -817,6 +857,9 @@ export class Voice {
                 try { source.stop(now + releaseTime + 0.1); } catch {}
             }
         } else {
+            // The immediate violin transient is independent of sampled layers.
+            try { this.stringTransient?.stop(now + Math.min(releaseTime, 0.19)); } catch {}
+        }
             this.oscillatorA.stop(now + releaseTime + 0.1);
             this.oscillatorB.stop(now + releaseTime + 0.1);
             this.oscillatorC.stop(now + releaseTime + 0.1);
@@ -864,6 +907,11 @@ export class Voice {
             try { layerPan.disconnect(); } catch {}
         }
         this.sampleSources = [];
+
+        try { this.stringTransient?.disconnect(); } catch {}
+        try { this.stringTransientGain?.disconnect(); } catch {}
+        this.stringTransient = null;
+        this.stringTransientGain = null;
 
         try {
             this.oscillatorA?.disconnect();
