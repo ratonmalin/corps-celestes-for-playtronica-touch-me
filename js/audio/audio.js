@@ -387,7 +387,9 @@ export class AudioEngine {
         const voice = this.activeVoices.get(voiceId);
         if (!voice) return;
 
-        voice.release();
+        // Mobile glides can cross notes rapidly. Use the short forced release
+        // for touch handoffs so old tails do not accumulate and glitch.
+        voice.release(event.source === "touch");
         this.activeVoices.delete(voiceId);
         this.updateSystemState();
     }
