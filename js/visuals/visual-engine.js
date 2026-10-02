@@ -617,13 +617,14 @@ export class VisualEngine {
     }
 
     drawMemory(ctx, now, layerStrength = 1) {
-        const idle = now - this.lastInteraction > 15000;
+        // IMPORTANT: idle state is UI-only. It must never alter star visibility.
+        // The memory sky is rendered continuously, including after 15 seconds.
 
         // Persistent stars drift at different depths. The motion is deliberately
         // slow enough to feel like a living sky rather than particles.
         for (const star of this.memory) {
             const depth = star.depth ?? 0.5;
-            const drift = (0.18 + depth * 0.72) * (idle ? 0.65 : 1);
+            const drift = 0.18 + depth * 0.72;
 
             star.x += Math.sin(now / 10000 + star.phase) *
                 star.driftX * drift * 0.018;
@@ -740,12 +741,8 @@ export class VisualEngine {
 
             // Stars never reach zero alpha: old memories remain as a faint sky.
             const settling = Math.exp(-age / 8);
-            const idleBreath = idle
-                ? 0.92 + 0.08 * Math.sin(now / 2600 + star.phase)
-                : 1;
             const presence =
                 (0.18 + settling * 0.82) *
-                idleBreath *
                 layerStrength;
 
             const energy = Math.max(0, Math.min(1, star.energy ?? 0.5));
@@ -801,8 +798,8 @@ export class VisualEngine {
             }
         }
 
-        // Idle becomes a quiet breathing state rather than a reset.
-        if (idle && visibleStars.length > 0) {
+        // No idle-dependent rendering here: stars remain visually continuous.
+        /* if (false && visibleStars.length > 0) {
             const center = this.getSystemCenter();
             const breath = 0.5 + 0.5 * Math.sin(now / 5200);
             const radius =
@@ -818,7 +815,7 @@ export class VisualEngine {
             ctx.lineWidth = 0.7;
             ctx.stroke();
             ctx.restore();
-        }
+        } */
     }
 
     drawConstellation(ctx, now, layerStrength = 1) {
