@@ -13,7 +13,11 @@ export class MobileTouchInput {
         this.handlePointerDown = this.handlePointerDown.bind(this);
         this.handlePointerMove = this.handlePointerMove.bind(this);
         this.handlePointerUp = this.handlePointerUp.bind(this);
+        this.handleTouchStart = this.handleTouchStart.bind(this);
+        this.handleTouchMove = this.handleTouchMove.bind(this);
+        this.handleTouchEnd = this.handleTouchEnd.bind(this);
         this.releaseAll = this.releaseAll.bind(this);
+        this.started = false;
     }
 
     setSensitivity(value) {
@@ -32,12 +36,20 @@ export class MobileTouchInput {
     }
 
     start() {
-        if (!this.isTouchDevice()) return false;
+        if (this.started || !this.isTouchDevice()) return false;
+        this.started = true;
 
+        // Pointer Events are the primary path. Keep a native touch fallback
+        // for mobile browsers that expose touch input without reliable
+        // pointer events.
         document.addEventListener("pointerdown", this.handlePointerDown, { passive: false });
         document.addEventListener("pointermove", this.handlePointerMove, { passive: false });
         document.addEventListener("pointerup", this.handlePointerUp, { passive: false });
         document.addEventListener("pointercancel", this.handlePointerUp, { passive: false });
+        document.addEventListener("touchstart", this.handleTouchStart, { passive: false });
+        document.addEventListener("touchmove", this.handleTouchMove, { passive: false });
+        document.addEventListener("touchend", this.handleTouchEnd, { passive: false });
+        document.addEventListener("touchcancel", this.handleTouchEnd, { passive: false });
         window.addEventListener("blur", this.releaseAll);
         document.addEventListener("visibilitychange", this.releaseAll);
 
@@ -67,17 +79,23 @@ export class MobileTouchInput {
     }
 
     getIntensity(event) {
-        const contact = Math.max(
+        const pressure = Number(event.pressure);
+        if (pressure > 0 && pressure < 1) {
+            return Math.max(0.08, Math.min(1, pressure));
+        }
+
+        const radius = Math.max(
             Number(event.width) || 0,
             Number(event.height) || 0
         );
 
-        if (contact > 1) {
-            return Math.max(0.08, Math.min(1, contact / 70));
+        if (radius > 1) {
+            return Math.max(0.08, Math.min(1, radius / 70));
         }
 
-        const pressure = Number(event.pressure);
-        return Math.max(0.08, Math.min(1, pressure || 0.5));
+        // A normal finger touch has no meaningful pressure value on some
+        // mobile browsers. Keep it playable rather than producing silence.
+        return 0.72;
     }
 
     emitNoteOn(pointerId, event, rawNote) {
@@ -113,6 +131,58 @@ export class MobileTouchInput {
             channel: 0,
             source: "touch"
         });
+    }
+
+    handleTouchStart(event) {
+        for (const touch of event.changedTouches) {
+            if (this.isInteractiveTarget(touch.target)) continue;
+            event.preventDefault();
+            this.emitNoteOn(touch.identifier, touch, this.getRawNote(touch));
+        }
+    }
+
+    handleTouchMove(event) {
+        for (const touch of event.changedTouches) {
+            const active = this.active.get(touch.identifier);
+            if (!active) continue;
+
+            event.preventDefault();
+            const rawNote = this.getRawNote(touch);
+            const nextNote = quantizeTouchMeNote(rawNote, this.scaleIndex);
+            const intensity = Math.max(0, Math.min(1, this.getIntensity(touch) * this.sensitivity));
+
+            if (nextNote !== active.note) {
+                this.eventBus.emit({
+                    type: "noteoff",
+                    note: active.note,
+                    rawNote: Math.round(active.rawNote),
+                    velocity: 0,
+                    channel: active.channel,
+                    source: "touch",
+                    timestamp: performance.now()
+                });
+                this.emitNoteOn(touch.identifier, touch, rawNote);
+                continue;
+            }
+
+            active.rawNote = rawNote;
+            this.eventBus.emit({
+                type: "intensity",
+                value: intensity,
+                note: active.note,
+                rawNote: Math.round(rawNote),
+                channel: active.channel,
+                source: "touch"
+            });
+        }
+    }
+
+    handleTouchEnd(event) {
+        for (const touch of event.changedTouches) {
+            if (!this.active.has(touch.identifier)) continue;
+            event.preventDefault();
+            this.releasePointer(touch.identifier);
+        }
     }
 
     handlePointerDown(event) {
