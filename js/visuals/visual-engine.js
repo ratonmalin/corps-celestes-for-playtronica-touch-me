@@ -85,6 +85,24 @@ export class VisualEngine {
         return `${event.source}-${event.channel}-${event.note}`;
     }
 
+    createBackgroundStars() {
+        const count = 150;
+        return Array.from({ length: count }, (_, index) => {
+            const seed = index * 91.173 + 17.31;
+            const randomX = Math.abs((Math.sin(seed) * 43758.5453) % 1);
+            const randomY = Math.abs((Math.sin(seed + 19.19) * 43758.5453) % 1);
+
+            return {
+                x: innerWidth * randomX,
+                y: innerHeight * randomY,
+                radius: 0.35 + (index % 5) * 0.18,
+                alpha: 0.10 + (index % 7) * 0.012,
+                phase: seed % (Math.PI * 2),
+                depth: 0.25 + (index % 9) / 12
+            };
+        });
+    }
+
     getVisualStyle() {
         return {
             palette: [
