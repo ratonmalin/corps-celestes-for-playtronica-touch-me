@@ -150,9 +150,8 @@ export class TouchMeMidiInput {
             const chordIntervals = getDiatonicTriadIntervals(mappedNote, this.scaleIndex);
 
             const raw = this.lastIntensity.get(channel);
-            const value = clamp01(
-                (raw ?? data2 / 127) * this.sensitivity
-            );
+            const rawValue = clamp01(raw ?? data2 / 127);
+            const value = clamp01(rawValue * this.sensitivity);
 
             const key = channel + "-" + data1;
 
@@ -166,7 +165,9 @@ export class TouchMeMidiInput {
                 type: "noteon",
                 note: mappedNote,
                 rawNote: data1,
-                velocity: Math.max(0.05, value),
+                // Sensitivity must never become an audio volume control.
+                // Velocity follows the MIDI note-on velocity directly.
+                velocity: Math.max(0.05, data2 / 127),
                 channel,
                 source: "touchme",
                 timestamp: performance.now(),
