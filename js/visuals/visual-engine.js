@@ -757,6 +757,7 @@ export class VisualEngine {
     drawIdle(ctx, now) {
         const idle = now - this.lastInteraction > 30000;
         const idleMessage = document.getElementById("idle-message");
+        const idleMessageText = document.getElementById("idle-message-text");
 
         const elapsed = (now - this.lastInteraction) / 1000;
         const sleepElapsed = Math.max(0, elapsed - 30);
@@ -781,9 +782,12 @@ export class VisualEngine {
             this.sleepMessageIndex =
                 (this.sleepMessageIndex + 1) % messages.length;
 
-            if (idleMessage) {
-                idleMessage.textContent =
+            if (idleMessageText) {
+                idleMessageText.textContent =
                     messages[this.sleepMessageIndex];
+            }
+
+            if (idleMessage) {
                 idleMessage.classList.add("visible");
             }
         } else if (idleMessage) {
