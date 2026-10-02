@@ -1,5 +1,5 @@
 import { EventBus } from "./core/event-bus.js";
-import { AudioEngine } from "./audio/audio.js?v=20261002-35";
+import { AudioEngine } from "./audio/audio.js?v=20261002-36";
 import { VisualEngine } from "./visuals/visual-engine.js?v=20261002-45";
 import { TouchMeMidiInput } from "./input/touchme-midi.js";
 
@@ -57,8 +57,11 @@ function renderSignal(note = null) {
 
 const INSTRUMENTS = [
     ["synth", "INSTRUMENT · SYNTHÉTIQUE"],
-    ["strings", "INSTRUMENT · ENSEMBLE DE VIOLONS"],
-    ["harp", "INSTRUMENT · HARPE"]
+    ["strings", "INSTRUMENT · CORDES"],
+    ["harp", "INSTRUMENT · HARPE"],
+    ["piano", "INSTRUMENT · PIANO FEUTRÉ"],
+    ["vibraphone", "INSTRUMENT · VIBRAPHONE"],
+    ["celesta", "INSTRUMENT · CÉLESTA"]
 ];
 
 let instrumentIndex = 0;
