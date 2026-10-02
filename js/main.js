@@ -29,6 +29,8 @@ const visuals = new VisualEngine(eventBus);
 let midi = null;
 let connected = false;
 let intensity = 0;
+let idleTimer = null;
+const IDLE_DELAY = 18000;
 
 const clamp = (value, min = 0, max = 1) =>
     Math.max(min, Math.min(max, value));
@@ -41,6 +43,19 @@ function noteFrequency(note) {
 
 function setStatus(text) {
     ui.status.textContent = text;
+}
+
+function setIdle(visible) {
+    const idle = $("idle-message");
+    if (!idle) return;
+    idle.classList.toggle("visible", visible);
+    idle.setAttribute("aria-hidden", visible ? "false" : "true");
+}
+
+function resetIdleTimer() {
+    if (idleTimer !== null) window.clearTimeout(idleTimer);
+    setIdle(false);
+    idleTimer = window.setTimeout(() => setIdle(true), IDLE_DELAY);
 }
 
 function renderSignal(note = null) {
@@ -136,6 +151,7 @@ ui.scale.addEventListener("change", async () => {
 });
 
 eventBus.on("noteon", event => {
+    resetIdleTimer();
     const value = Number.isFinite(event.touchIntensity) ? event.touchIntensity : event.velocity;
     intensity = clamp(value);
     renderSignal(event.note);
@@ -168,6 +184,7 @@ async function boot() {
     ui.sensOut.textContent = sensitivity.toFixed(1) + "×";
 
     visuals.start();
+    resetIdleTimer();
     decay();
     setStatus("INITIALISATION");
 
