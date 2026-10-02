@@ -25,14 +25,17 @@ export class AudioEngine {
         this.reverbInput = null;
         this.reverb = null;
         this.reverbGain = null;
+        this.reverbCompressor = null;
         this.delayInput = null;
         this.delayNode = null;
         this.delayFeedback = null;
         this.delayGain = null;
+        this.delayCompressor = null;
         this.echoInput = null;
         this.echoNode = null;
         this.echoFeedback = null;
         this.echoGain = null;
+        this.echoCompressor = null;
         this.activeVoices = new Map();
         this.pendingNotes = new Map();
         this.maxVoices = 16;
@@ -139,9 +142,9 @@ export class AudioEngine {
             this.masterGain.gain.value = this.volume;
 
             this.compressor = this.audioContext.createDynamicsCompressor();
-            this.compressor.threshold.value = -18;
+            this.compressor.threshold.value = -16;
             this.compressor.knee.value = 18;
-            this.compressor.ratio.value = 3;
+            this.compressor.ratio.value = 2.5;
             this.compressor.attack.value = 0.012;
             this.compressor.release.value = 0.18;
 
@@ -150,11 +153,11 @@ export class AudioEngine {
             // Keep the musical dynamics in the compressor, then hard-limit
             // only the final bus so individual instruments cannot clip.
             this.limiter = this.audioContext.createDynamicsCompressor();
-            this.limiter.threshold.value = -2;
+            this.limiter.threshold.value = -4;
             this.limiter.knee.value = 0;
             this.limiter.ratio.value = 20;
             this.limiter.attack.value = 0.001;
-            this.limiter.release.value = 0.08;
+            this.limiter.release.value = 0.12;
 
             this.createReverb();
             this.createDelayEffects();
@@ -208,6 +211,16 @@ export class AudioEngine {
         this.reverbGain = context.createGain();
         this.reverbGain.gain.value = this.reverbAmount;
 
+        // Keep dense reverb returns from creating large instantaneous peaks.
+        // This does not change the reverb control range; it only catches the
+        // summed return before it reaches the master bus.
+        this.reverbCompressor = context.createDynamicsCompressor();
+        this.reverbCompressor.threshold.value = -10;
+        this.reverbCompressor.knee.value = 12;
+        this.reverbCompressor.ratio.value = 4;
+        this.reverbCompressor.attack.value = 0.002;
+        this.reverbCompressor.release.value = 0.18;
+
         const reverbFilter = context.createBiquadFilter();
         reverbFilter.type = "lowpass";
         reverbFilter.frequency.value = 2600;
@@ -216,7 +229,8 @@ export class AudioEngine {
         this.reverbInput.connect(this.reverb);
         this.reverb.connect(reverbFilter);
         reverbFilter.connect(this.reverbGain);
-        this.reverbGain.connect(this.masterGain);
+        this.reverbGain.connect(this.reverbCompressor);
+        this.reverbCompressor.connect(this.masterGain);
     }
 
     createDelayEffects() {
@@ -226,6 +240,12 @@ export class AudioEngine {
         this.delayNode = context.createDelay(1);
         this.delayFeedback = context.createGain();
         this.delayGain = context.createGain();
+        this.delayCompressor = context.createDynamicsCompressor();
+        this.delayCompressor.threshold.value = -10;
+        this.delayCompressor.knee.value = 12;
+        this.delayCompressor.ratio.value = 4;
+        this.delayCompressor.attack.value = 0.002;
+        this.delayCompressor.release.value = 0.18;
 
         this.delayNode.delayTime.value = 0.24;
         this.delayFeedback.gain.value = 0.42;
@@ -235,12 +255,19 @@ export class AudioEngine {
         this.delayNode.connect(this.delayFeedback);
         this.delayFeedback.connect(this.delayNode);
         this.delayNode.connect(this.delayGain);
-        this.delayGain.connect(this.masterGain);
+        this.delayGain.connect(this.delayCompressor);
+        this.delayCompressor.connect(this.masterGain);
 
         this.echoInput = context.createGain();
         this.echoNode = context.createDelay(1);
         this.echoFeedback = context.createGain();
         this.echoGain = context.createGain();
+        this.echoCompressor = context.createDynamicsCompressor();
+        this.echoCompressor.threshold.value = -10;
+        this.echoCompressor.knee.value = 12;
+        this.echoCompressor.ratio.value = 4;
+        this.echoCompressor.attack.value = 0.002;
+        this.echoCompressor.release.value = 0.18;
 
         this.echoNode.delayTime.value = 0.52;
         this.echoFeedback.gain.value = 0.5;
@@ -250,7 +277,8 @@ export class AudioEngine {
         this.echoNode.connect(this.echoFeedback);
         this.echoFeedback.connect(this.echoNode);
         this.echoNode.connect(this.echoGain);
-        this.echoGain.connect(this.masterGain);
+        this.echoGain.connect(this.echoCompressor);
+        this.echoCompressor.connect(this.masterGain);
 
 
     }
