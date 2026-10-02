@@ -85,7 +85,7 @@ export class TouchMeMidiInput {
 
         this.input =
             inputs.find(port =>
-                /touchme|playtronica/i.test(
+                /touchme|touch|playtronica/i.test(
                     String(port.name || "") +
                     " " +
                     String(port.manufacturer || "")
