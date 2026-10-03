@@ -38,10 +38,10 @@ export class AudioEngine {
         this.echoCompressor = null;
         this.activeVoices = new Map();
         this.pendingNotes = new Map();
-        this.maxVoices = 8;
+        this.maxVoices = 5;
         this.started = false;
         this.volume = 0.5;
-        this.reverbAmount = 2;
+        this.reverbAmount = 0;
         this.delayAmount = 0;
         this.echoAmount = 0;
         this.instrument = "synth";
