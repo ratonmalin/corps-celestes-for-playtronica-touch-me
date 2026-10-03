@@ -433,7 +433,7 @@ export class Voice {
                 : this.instrument === "piano" ? 0.012
                     : this.instrument === "vibraphone" ? 0.008
                         : this.instrument === "celesta" ? 0.006
-                            : 0.008;
+                            : 0.012;
 
         const decay =
             this.instrument === "harp" ? 0.025
@@ -883,7 +883,7 @@ export class Voice {
                 ? (heldFor < 0.45 ? 1.8 : heldFor < 2 ? 3.2 : 4.2)
                 : this.instrument === "harp"
                     ? (heldFor < 0.45 ? 0.35 : heldFor < 2 ? 0.7 : 1.0)
-                    : (heldFor < 0.45 ? 0.7 : heldFor < 2 ? 1.2 : 1.8);
+                    : (heldFor < 0.45 ? 0.22 : heldFor < 2 ? 0.65 : 1.2);
 
         /*
          * RELEASE ADAPTATIF
