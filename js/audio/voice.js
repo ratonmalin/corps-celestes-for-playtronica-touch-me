@@ -433,7 +433,21 @@ export class Voice {
                 : this.instrument === "piano" ? 0.012
                     : this.instrument === "vibraphone" ? 0.008
                         : this.instrument === "celesta" ? 0.006
+                            : 0.008;
+
+        const decay =
+            this.instrument === "harp" ? 0.025
+                : this.instrument === "piano" ? 0.035
+                    : this.instrument === "vibraphone" ? 0.03
+                        : this.instrument === "celesta" ? 0.025
                             : 0.035;
+
+        const sustainLevel =
+            this.instrument === "harp" ? 0.92
+                : this.instrument === "piano" ? 0.82
+                    : this.instrument === "vibraphone" ? 0.88
+                        : this.instrument === "celesta" ? 0.86
+                            : 0.88;
 
         const filterAttack =
             this.instrument === "harp" ? 0.025
@@ -484,6 +498,15 @@ export class Voice {
                     0.0002
                 ),
                 now + attack
+            );
+
+        this.gain.gain
+            .exponentialRampToValueAtTime(
+                Math.max(
+                    peakGain * sustainLevel,
+                    0.0002
+                ),
+                now + attack + decay
             );
 
         if (this.instrument === "harp") {
