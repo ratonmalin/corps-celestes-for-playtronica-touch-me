@@ -855,7 +855,7 @@ export class Voice {
             );
 
         const releaseTime = force
-            ? 0.12
+            ? 0.015
             : this.instrument === "strings"
                 ? (heldFor < 0.45 ? 1.8 : heldFor < 2 ? 3.2 : 4.2)
                 : this.instrument === "harp"
