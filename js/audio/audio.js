@@ -326,7 +326,7 @@ export class AudioEngine {
             const oldestId = this.activeVoices.keys().next().value;
             const oldestVoice = this.activeVoices.get(oldestId);
             if (oldestVoice) {
-                try { oldestVoice.release(); }
+                try { oldestVoice.release(true); }
                 catch (error) { console.warn("[AUDIO] Voice limit recovery:", error); }
             }
             this.activeVoices.delete(oldestId);
