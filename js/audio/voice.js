@@ -411,11 +411,11 @@ export class Voice {
             context.createGain();
 
         const peakGain =
-            (this.instrument === "harp" ? 0.12
+            (this.instrument === "harp" ? 0.09
                 : this.instrument === "piano" ? 0.11
                     : this.instrument === "vibraphone" ? 0.095
                         : this.instrument === "celesta" ? 0.082
-                            : 0.095) * this.velocity;
+                            : 0.065) * this.velocity;
 
         this.gain.gain
             .setValueAtTime(
@@ -773,7 +773,7 @@ export class Voice {
         const reverbAmount =
             this.instrument === "harp"
                 ? 0
-                : 1.15 + proximity * 0.32 + systemLevel * 0.16;
+                : 0;
 
         const filterRate =
             0.05 +
