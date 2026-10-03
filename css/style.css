@@ -150,6 +150,14 @@ h1 {
     text-overflow: ellipsis;
 }
 
+.status-bar .midi-permission {
+    width: auto;
+    max-width: none;
+    min-height: 24px;
+    padding: 3px 0;
+    pointer-events: auto;
+}
+
 .separator { opacity: .35; }
 
 .led {
