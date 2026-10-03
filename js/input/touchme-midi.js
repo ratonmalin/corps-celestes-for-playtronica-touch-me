@@ -35,6 +35,11 @@ export class TouchMeMidiInput {
     }
 
     async start() {
+        if (this.access) {
+            this.refreshInput();
+            return;
+        }
+
         if (!navigator.requestMIDIAccess) {
             this.onSignal?.({
                 type: "status",
@@ -62,10 +67,10 @@ export class TouchMeMidiInput {
             this.refreshInput();
         } catch (error) {
             this.onSignal?.({
-                type: "status",
+                type: "permission",
                 status:
                     error?.name === "NotAllowedError"
-                        ? "ACCÈS MIDI REFUSÉ"
+                        ? "AUTORISATION MIDI REQUISE"
                         : "MIDI INDISPONIBLE"
             });
 
