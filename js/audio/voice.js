@@ -957,6 +957,49 @@ export class Voice {
     }
 
 
+    fadeOutAndStop(duration = 0.025) {
+        if (this.isReleased || !this.gain) return;
+
+        this.isReleased = true;
+        if (this.maxHoldTimer !== null) {
+            clearTimeout(this.maxHoldTimer);
+            this.maxHoldTimer = null;
+        }
+
+        const context = this.audioContext;
+        const now = context.currentTime;
+        const fade = Math.max(0.008, Math.min(0.04, duration));
+        const currentGain = Math.max(this.gain.gain.value, 0.0001);
+
+        this.gain.gain.cancelScheduledValues(now);
+        this.gain.gain.setValueAtTime(currentGain, now);
+        this.gain.gain.exponentialRampToValueAtTime(0.0001, now + fade);
+
+        this.reverbSend?.gain.cancelScheduledValues(now);
+        this.reverbSend?.gain.setValueAtTime(
+            Math.max(this.reverbSend.gain.value, 0.0001), now
+        );
+        this.reverbSend?.gain.exponentialRampToValueAtTime(0.0001, now + fade);
+
+        const stopAt = now + fade + 0.005;
+        if (this.sampleSources.length) {
+            for (const { source } of this.sampleSources) {
+                try { source.stop(stopAt); } catch {}
+            }
+        } else {
+            try { this.oscillatorA?.stop(stopAt); } catch {}
+            try { this.oscillatorB?.stop(stopAt); } catch {}
+            try { this.oscillatorC?.stop(stopAt); } catch {}
+        }
+        try { this.lfo?.stop(stopAt); } catch {}
+        try { this.filterLfo?.stop(stopAt); } catch {}
+
+        this.releaseTimer = window.setTimeout(
+            () => this.disconnect(),
+            (fade + 0.05) * 1000
+        );
+    }
+
     disconnect() {
 
         if (this.releaseTimer !== null) {
