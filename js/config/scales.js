@@ -19,6 +19,7 @@ export const SCALES = [
 const TOUCHME_ROOT_NOTE = 36; // C2
 const TOUCHME_MIN_NOTE = 48;
 const TOUCHME_MAX_NOTE = 84;
+const TOUCHME_INPUT_COUNT = 16;
 
 export function quantizeTouchMeNote(note, scaleIndex = 0) {
     if (!Number.isFinite(note)) return TOUCHME_ROOT_NOTE;
@@ -35,12 +36,16 @@ export function quantizeTouchMeNote(note, scaleIndex = 0) {
         )
     );
 
-    // Map each TouchMe input position to the next degree of the scale,
-    // rather than nearest-note quantization. This keeps every input step
-    // distinct and avoids repeated notes, especially in the upper range.
+    // Compress the TouchMe's MIDI range into its 16 musical positions.
+    // This keeps the complete playable range compact: C2 to D4 in major.
+    const position = Math.round(
+        relative * (TOUCHME_INPUT_COUNT - 1) /
+        (TOUCHME_MAX_NOTE - TOUCHME_MIN_NOTE)
+    );
+
     const degreeCount = scale.intervals.length;
-    const octave = Math.floor(relative / degreeCount);
-    const degree = relative % degreeCount;
+    const octave = Math.floor(position / degreeCount);
+    const degree = position % degreeCount;
 
     return TOUCHME_ROOT_NOTE +
         octave * 12 +
