@@ -18,6 +18,7 @@ const ui = {
     scale: $("scale"),
     effects: [...document.querySelectorAll(".effect-slider")],
     instrument: $("instrument"),
+    midiPermission: $("midi-permission"),
 };
 
 const eventBus = new EventBus();
@@ -197,9 +198,16 @@ async function boot() {
             renderSignal();
             return;
         }
+        if (event.type === "permission") {
+            connected = false;
+            setStatus(event.status);
+            ui.led.classList.remove("on");
+            ui.midiPermission.hidden = false;
+            return;
+        }
         if (event.type === "status") {
             connected = false;
-            setStatus("");
+            setStatus(event.status === "TOUCHME EN ATTENTE" ? "TOUCHME EN ATTENTE" : "");
             ui.led.classList.remove("on");
             return;
         }
@@ -217,6 +225,12 @@ async function boot() {
     mobileTouch.setSensitivity(sensitivity);
     mobileTouch.setScale(scaleIndex);
     mobileTouch.start();
+
+    ui.midiPermission.addEventListener("click", async () => {
+        ui.midiPermission.hidden = true;
+        setStatus("AUTORISATION MIDI…");
+        await midi.start();
+    });
 
     await midi.start();
 
