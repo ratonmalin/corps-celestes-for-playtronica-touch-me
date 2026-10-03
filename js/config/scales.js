@@ -17,8 +17,8 @@ export const SCALES = [
 ];
 
 const TOUCHME_ROOT_NOTE = 36; // C2
-const TOUCHME_MIN_NOTE = 48;  // TouchMe input range starts at C3
-const TOUCHME_MAX_NOTE = 84;  // TouchMe input range ends at C6
+const TOUCHME_MIN_NOTE = 48;
+const TOUCHME_MAX_NOTE = 84;
 
 export function quantizeTouchMeNote(note, scaleIndex = 0) {
     if (!Number.isFinite(note)) return TOUCHME_ROOT_NOTE;
@@ -35,20 +35,14 @@ export function quantizeTouchMeNote(note, scaleIndex = 0) {
         )
     );
 
-    const octave = Math.floor(relative / 12);
-    const semitone = relative % 12;
+    // Map each TouchMe input position to the next degree of the scale,
+    // rather than nearest-note quantization. This keeps every input step
+    // distinct and avoids repeated notes, especially in the upper range.
+    const degreeCount = scale.intervals.length;
+    const octave = Math.floor(relative / degreeCount);
+    const degree = relative % degreeCount;
 
-    let nearest = scale.intervals[0];
-    let distance = Infinity;
-
-    for (const interval of scale.intervals) {
-        const currentDistance = Math.abs(interval - semitone);
-
-        if (currentDistance < distance) {
-            nearest = interval;
-            distance = currentDistance;
-        }
-    }
-
-    return TOUCHME_ROOT_NOTE + octave * 12 + nearest;
+    return TOUCHME_ROOT_NOTE +
+        octave * 12 +
+        scale.intervals[degree];
 }
