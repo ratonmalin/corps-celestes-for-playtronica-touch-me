@@ -400,7 +400,7 @@ export class Voice {
                     : this.instrument === "vibraphone" ? 0.025
                         : 0.08
         );
-        this.saturation.oversample = "2x";
+        this.saturation.oversample = "none";
 
 
         /*
@@ -859,8 +859,8 @@ export class Voice {
             : this.instrument === "strings"
                 ? (heldFor < 0.45 ? 1.8 : heldFor < 2 ? 3.2 : 4.2)
                 : this.instrument === "harp"
-                    ? (heldFor < 0.45 ? 0.45 : heldFor < 2 ? 0.9 : 1.35)
-                    : (heldFor < 0.45 ? 1.1 : heldFor < 2 ? 1.8 : 2.6);
+                    ? (heldFor < 0.45 ? 0.35 : heldFor < 2 ? 0.7 : 1.0)
+                    : (heldFor < 0.45 ? 0.7 : heldFor < 2 ? 1.2 : 1.8);
 
         /*
          * RELEASE ADAPTATIF
